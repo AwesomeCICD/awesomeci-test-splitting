@@ -1,0 +1,31 @@
+version: 2.1
+
+orbs:
+    node: circleci/node@5.0.0
+
+jobs:
+    build-and-test:
+        docker:
+            - image: cimg/node:17.3.1
+        parallelism: 45
+        steps:
+            - checkout
+            - node/install-packages:
+                pkg-manager: yarn      
+            - run: mkdir ~/junit
+            - run:
+                name: Test application
+                command: |
+                    TEST=$(circleci tests glob **/__tests__/*.js | circleci tests split --split-by=timings)
+                    yarn test $TEST
+            - run:
+                command: cp junit.xml ~/junit/
+                when: always
+            - store_test_results:
+                path: ~/junit
+            - store_artifacts:
+                path: ~/junit
+workflows:
+    build-and-test:
+      jobs:
+        - build-and-test
