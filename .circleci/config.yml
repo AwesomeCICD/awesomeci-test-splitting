@@ -5,10 +5,12 @@ orbs:
 
 jobs:
     build-and-test:
-        docker:
-            - image: cimg/node:17.3.1
+        machine:
+          image: ubuntu-2204:current
+        #docker:
+        #    - image: cimg/node:17.3.1
         parallelism: 25
-        resource_class: 2xlarge
+        resource_class: xlarge
         steps:
             - checkout
             - node/install-packages:
