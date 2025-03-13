@@ -10,7 +10,7 @@ jobs:
         #docker:
         #    - image: cimg/node:17.3.1
         parallelism: 25
-        resource_class: xlarge
+        resource_class: large
         steps:
             - checkout
             - node/install-packages:
