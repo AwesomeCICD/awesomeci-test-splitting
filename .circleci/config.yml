@@ -7,6 +7,7 @@ jobs:
     build-and-test:
         docker:
             - image: cimg/node:20.19
+        resource_class: small
         parallelism: 45
         steps:
             - checkout
