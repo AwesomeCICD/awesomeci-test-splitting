@@ -12,6 +12,7 @@ jobs:
     build-and-test:
         docker:
             - image: cimg/node:17.3.1
+        working_directory: /home/circleci/project
         parallelism: 5
         steps:
             - checkout
