@@ -6,19 +6,20 @@ orbs:
 parameters:
   react-path:
     type: string
-    default: "/home/circleci/project/backend"
+    default: "/home/circleci/project/react"
 
 jobs:
-    build-and-test:
+    react-tests:
         docker:
             - image: cimg/node:17.3.1
         #working_directory: /home/circleci/project
-        parallelism: 5
+        resource_class: small
+        parallelism: 45
         steps:
             - checkout
             - node/install-packages:
                 pkg-manager: yarn
-                app-dir: "/home/circleci/project/backend"    
+                app-dir: <<pipeline.parameters.react-path>>    
             - run: mkdir <<pipeline.parameters.react-path>>/junit
             - run:
                 name: Test application
@@ -34,6 +35,6 @@ jobs:
             - store_artifacts:
                 path: <<pipeline.parameters.react-path>>/junit
 workflows:
-    build-and-test:
+    react:
       jobs:
-        - build-and-test
+        - react-tests
