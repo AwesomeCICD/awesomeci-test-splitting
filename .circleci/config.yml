@@ -13,19 +13,20 @@ jobs:
             - checkout
             - node/install-packages:
                 pkg-manager: yarn      
-            - run: mkdir ~/junit
+            - run: mkdir ~/backend/junit
             - run:
                 name: Test application
                 command: |
+                    cd backend
                     TEST=$(circleci tests glob **/__tests__/*.js | circleci tests split --split-by=timings)
                     yarn test $TEST
             - run:
-                command: cp junit.xml ~/junit/
+                command: cp junit.xml ~/backend/junit/
                 when: always
             - store_test_results:
-                path: ~/junit
+                path: ~/backend/junit
             - store_artifacts:
-                path: ~/junit
+                path: ~/backend/junit
 workflows:
     build-and-test:
       jobs:
