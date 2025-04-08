@@ -6,13 +6,12 @@ orbs:
 parameters:
   react-path:
     type: string
-    default: "/home/circleci/backend"
+    default: "/home/circleci/project/backend"
 
 jobs:
     build-and-test:
         docker:
             - image: cimg/node:17.3.1
-        working_directory: <<pipeline.parameters.react-path>>
         parallelism: 5
         steps:
             - checkout
