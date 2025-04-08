@@ -51,11 +51,13 @@ commands:
             sudo apt-get install -y php-xdebug
             echo "zend_extension=$(find /usr/lib/php/ -name xdebug.so)" | sudo tee /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
             php -v
-      - run: composer install
+      - run: |
+          cd /home/circleci/project/php
+          composer install
       - run:
           name: Run PHPUnit with reports
           command: |
-            cd /home/circleci/project/react
+            cd /home/circleci/project/php
             mkdir -p temp
             TESTFILES=$(circleci tests glob "./tests/**/*.php" | circleci tests split --split-by=timings)
             for x in $TESTFILES; do
@@ -88,13 +90,15 @@ commands:
           command: php -v
       - run:
           name: Install Composer Dependencies
-          command: composer install --ignore-platform-req=ext-curl --ignore-platform-req=ext-zip --ignore-platform-req=ext-dom
+          command: |
+              cd /home/circleci/project/php
+              composer install --ignore-platform-req=ext-curl --ignore-platform-req=ext-zip --ignore-platform-req=ext-dom
       - run:
           name: Run PHPUnit with HTML Coverage Report (Selenium Ready)
           command: |
             Xvfb :99 &  # start headless display
             export DISPLAY=:99
-            cd /home/circleci/project/react
+            cd /home/circleci/project/php
             mkdir -p temp
             TESTFILES=$(circleci tests glob "./tests/**/*.php" | circleci tests split --split-by=timings)
             for x in $TESTFILES; do
