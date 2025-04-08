@@ -31,6 +31,7 @@ commands:
       - run:
           name: Install Composer Dependencies
           command: |
+             cd /home/circleci/project/php
              composer install --ignore-platform-req=ext-curl --ignore-platform-req=ext-zip
              ls -lah
       - save_cache:
