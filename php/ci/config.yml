@@ -125,7 +125,7 @@ jobs:
 
   php-tests-no-cache:
     executor: docker-default
-    parallelism: 4
+    parallelism: 25
     steps:
       - run-tests-parallel
 

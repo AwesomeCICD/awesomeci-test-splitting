@@ -58,11 +58,11 @@ commands:
       - run: 
           name: Run a simple CLI command to verify permissions
           command: aws sts get-caller-identity
-      - run:
-          when: on_success
-          name: push to ECR if build is successful
-          command: |
-            bash scripts/push-ecr-image.sh
+      #- run:
+      #    when: on_success
+      #    name: push to ECR if build is successful
+      #    command: |
+      #      bash scripts/push-ecr-image.sh
 
   aws-auth-setup:
     steps:
