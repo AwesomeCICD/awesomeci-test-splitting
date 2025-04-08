@@ -3,30 +3,35 @@ version: 2.1
 orbs:
     node: circleci/node@5.0.0
 
+parameters:
+  react-path:
+    type: string
+    default: "/home/circleci/backend"
+
 jobs:
     build-and-test:
         docker:
             - image: cimg/node:17.3.1
-        working_directory: ~/backend
-        parallelism: 45
+        working_directory: <<pipeline.parameters.react-path>>
+        parallelism: 5
         steps:
             - checkout
             - node/install-packages:
                 pkg-manager: yarn      
-            - run: mkdir ~/backend/junit
+            - run: mkdir <<pipeline.parameters.react-path>>/junit
             - run:
                 name: Test application
                 command: |
-                    cd backend
+                    cd <<pipeline.parameters.react-path>>
                     TEST=$(circleci tests glob **/__tests__/*.js | circleci tests split --split-by=timings)
                     yarn test $TEST
             - run:
-                command: cp junit.xml ~/backend/junit/
+                command: cp <<pipeline.parameters.react-path>>/junit.xml <<pipeline.parameters.react-path>>/junit/
                 when: always
             - store_test_results:
-                path: ~/backend/junit
+                path: <<pipeline.parameters.react-path>>/junit
             - store_artifacts:
-                path: ~/backend/junit
+                path: <<pipeline.parameters.react-path>>/junit
 workflows:
     build-and-test:
       jobs:
