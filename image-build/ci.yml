@@ -1,0 +1,102 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@5.2.0
+  node: circleci/node@7.1.0
+  php: circleci/php@1.1.0
+
+
+parameters:
+  role-name:
+    type: string
+    default: "arn:aws:iam::992382483259:role/fieldeng_aws_ci_oidc_oauth_role" 
+  aws-default-region:
+    type: string
+    default: "us-east-1"
+
+
+executors:
+  machine-default-dlc:
+    machine:
+      image: ubuntu-2404:current
+      docker_layer_caching: true
+    resource_class: medium
+    environment:
+      ECR_IMAGE_REPO: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
+      FE_CUSTOM_DOCKER: "fieldeng-custom-docker"
+      HELM_INSTALL_VERSION: "3.15.2"
+      TAG: "dlc"
+      AWS_DEFAULT_REGION: "us-east-1"
+
+  machine-default:
+    machine:
+      image: ubuntu-2404:current
+      #docker_layer_caching: true
+    resource_class: medium
+    environment:
+      ECR_IMAGE_REPO: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
+      FE_CUSTOM_DOCKER: "fieldeng-custom-docker"
+      HELM_INSTALL_VERSION: "3.15.2"
+      TAG: "latest"
+      AWS_DEFAULT_REGION: "us-east-1"
+
+  custom-docker:
+    docker:
+      - image: 992382483259.dkr.ecr.us-east-1.amazonaws.com/fieldeng-custom-docker:latest
+        aws_auth:
+          oidc_role_arn: <<pipeline.parameters.role-name>>
+    resource_class: small
+
+commands:
+  build-image-cmds:
+    steps:
+      - checkout
+      - run: 
+          name: Run docker build command
+          command: docker build . -t $FE_CUSTOM_DOCKER:$TAG --cache-from=$FE_CUSTOM_DOCKER
+      - aws-auth-setup
+      - run: 
+          name: Run a simple CLI command to verify permissions
+          command: aws sts get-caller-identity
+      - run:
+          when: on_success
+          name: push to ECR if build is successful
+          command: |
+            bash scripts/push-ecr-image.sh
+
+  aws-auth-setup:
+    steps:
+      - aws-cli/setup:
+          region: << pipeline.parameters.aws-default-region >>
+          role_arn: << pipeline.parameters.role-name >>
+          role_session_name: "CircleCI-${CIRCLE_WORKFLOW_ID}-${CIRCLE_JOB}"
+
+jobs:
+  build-image-dlc:
+    executor: machine-default-dlc
+    steps:
+      - build-image-cmds
+
+  build-image-no-dlc:
+    executor: machine-default
+    steps:
+      - build-image-cmds
+
+
+  custom-image-test:
+    executor: custom-docker
+    parallelism: 1
+    steps:
+      - checkout
+      - run: echo "hello"
+
+workflows:
+  build-aws-prod-image:
+    jobs:
+      - build-image-no-dlc:
+           context: production
+      - build-image-dlc:
+           context: production
+      - custom-image-test:
+           requires:
+             - build-image-dlc
