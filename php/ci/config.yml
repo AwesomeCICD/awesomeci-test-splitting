@@ -3,6 +3,11 @@ version: 2.1
 orbs:
   php: circleci/php@1.1.0
 
+parameters:
+  default-path:
+    type: string
+    default: "/home/circleci/project/php"
+
 executors:
   docker-default:
     docker:
@@ -26,7 +31,7 @@ commands:
       - run:
           name: Install Composer Dependencies
           command: |
-             cd /home/circleci/project/php
+             cd << pipeline.parameters.default-path>>
              composer install --ignore-platform-req=ext-curl --ignore-platform-req=ext-zip
              ls -lah
       - save_cache:
@@ -48,12 +53,12 @@ commands:
             echo "zend_extension=$(find /usr/lib/php/ -name xdebug.so)" | sudo tee /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
             php -v
       - run: |
-          cd /home/circleci/project/php
+          cd << pipeline.parameters.default-path>>
           composer install
       - run:
           name: Run PHPUnit with reports
           command: |
-            cd /home/circleci/project/php
+            cd << pipeline.parameters.default-path>>
             mkdir -p temp
             TESTFILES=$(circleci tests glob "./tests/**/*.php" | circleci tests split --split-by=timings)
             for x in $TESTFILES; do
@@ -87,14 +92,14 @@ commands:
       - run:
           name: Install Composer Dependencies
           command: |
-              cd /home/circleci/project/php
+              cd << pipeline.parameters.default-path>>
               composer install --ignore-platform-req=ext-curl --ignore-platform-req=ext-zip --ignore-platform-req=ext-dom
       - run:
           name: Run PHPUnit with HTML Coverage Report (Selenium Ready)
           command: |
             Xvfb :99 &  # start headless display
             export DISPLAY=:99
-            cd /home/circleci/project/php
+            cd << pipeline.parameters.default-path>>
             mkdir -p temp
             TESTFILES=$(circleci tests glob "./tests/**/*.php" | circleci tests split --split-by=timings)
             for x in $TESTFILES; do
