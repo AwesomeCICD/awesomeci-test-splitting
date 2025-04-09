@@ -12,7 +12,6 @@ jobs:
     react-tests:
         docker:
             - image: cimg/node:17.3.1
-        #working_directory: /home/circleci/project
         resource_class: small
         parallelism: 45
         steps:
@@ -22,7 +21,7 @@ jobs:
                 app-dir: <<pipeline.parameters.react-path>>    
             - run: mkdir <<pipeline.parameters.react-path>>/junit
             - run:
-                name: Test application
+                name: Test application with Automatic test splitting
                 command: |
                     cd <<pipeline.parameters.react-path>>
                     TEST=$(circleci tests glob **/__tests__/*.js | circleci tests split --split-by=timings)
