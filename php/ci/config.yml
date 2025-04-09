@@ -1,10 +1,7 @@
 version: 2.1
 
 orbs:
-  aws-cli: circleci/aws-cli@5.2.0
-  node: circleci/node@7.1.0
   php: circleci/php@1.1.0
-
 
 executors:
   docker-default:
@@ -12,8 +9,6 @@ executors:
       - image: cimg/php:8.1
     resource_class: small
     working_directory: 
-
-
 
 commands:
   run-tests-parallel-docker:
@@ -128,8 +123,6 @@ jobs:
     parallelism: 25
     steps:
       - run-tests-parallel
-
-
 
 
 workflows:
