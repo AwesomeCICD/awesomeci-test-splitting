@@ -117,7 +117,7 @@ commands:
 
 
 jobs:
-  php-tests-docker:
+  php-tests-with-cache:
     executor: docker-default
     parallelism: 45
     steps:
@@ -134,4 +134,4 @@ workflows:
   php:
     jobs:
       - php-tests-no-cache
-      - php-tests-docker
+      - php-tests-with-cache
