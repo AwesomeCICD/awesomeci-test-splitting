@@ -70,7 +70,7 @@ commands:
       - store_test_results:
           path: << pipeline.parameters.default-path>>/reports
       - store_artifacts:
-          path:<< pipeline.parameters.default-path>>/reports
+          path: << pipeline.parameters.default-path>>/reports
           destination: phpunit-reports
 
   run-tests-parallel:
