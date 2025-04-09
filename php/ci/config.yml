@@ -68,9 +68,9 @@ commands:
             junit-viewer --results=reports/junit.xml --save=reports/junit.html
             ls -lah
       - store_test_results:
-          path: << pipeline.parameters.default-path>>/reports
+          path: /home/circleci/project/php/reports
       - store_artifacts:
-          path: << pipeline.parameters.default-path>>/reports
+          path: /home/circleci/project/php/reports
           destination: phpunit-reports
 
   run-tests-parallel:
