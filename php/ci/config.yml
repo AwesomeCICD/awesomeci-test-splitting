@@ -119,13 +119,13 @@ commands:
 jobs:
   php-tests-with-cache:
     executor: docker-default
-    parallelism: 45
+    parallelism: 8
     steps:
       - run-tests-parallel-docker
 
   php-tests-no-cache:
     executor: docker-default
-    parallelism: 25
+    parallelism: 45
     steps:
       - run-tests-parallel
 
