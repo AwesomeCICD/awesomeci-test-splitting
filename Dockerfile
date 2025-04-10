@@ -123,6 +123,18 @@ RUN apt-get update && apt-get install -y \
     docker --version && \
     rm -rf /var/lib/apt/lists/*
 
+# Install PHP extensions, XVFB, and global npm packages
+RUN apt-get update && apt-get install -y \
+    php-cli \
+    php-xml \
+    php-curl \
+    php-xdebug \
+    xvfb \
+    npm && \
+    echo "zend_extension=$(find /usr/lib/php/ -name xdebug.so)" > /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && \
+    npm install -g junit-viewer && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install Docker Compose - see prerequisite above
 ENV COMPOSE_VER 2.17.2
 ENV COMPOSE_SWITCH_VERSION 1.0.5
