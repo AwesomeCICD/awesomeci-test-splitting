@@ -42,13 +42,6 @@ commands:
             - vendor
             - composer.lock
       - run:
-          name: Install Node.js and junit-viewer
-          command: |
-            echo "just a placeholder comment for now"
-            #curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            #sudo apt-get install -y nodejs
-            
-      - run:
           name: Install and Enable Xdebug
           command: |
             sudo apt-get install -y php-xdebug
