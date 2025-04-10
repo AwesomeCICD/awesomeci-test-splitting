@@ -11,7 +11,7 @@ parameters:
 executors:
   docker-default:
     docker:
-      - image: cimg/php:8.1
+      - image: cimg/php:8.3.20-node
     resource_class: small
     working_directory: 
 
@@ -28,6 +28,7 @@ commands:
           command: |
             sudo apt-get update
             sudo apt-get install -y php-xml php-curl xvfb
+            sudo npm install -g junit-viewer
       - run:
           name: Install Composer Dependencies
           command: |
@@ -43,9 +44,10 @@ commands:
       - run:
           name: Install Node.js and junit-viewer
           command: |
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            sudo npm install -g junit-viewer
+            echo "just a placeholder comment for now"
+            #curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            #sudo apt-get install -y nodejs
+            
       - run:
           name: Install and Enable Xdebug
           command: |
