@@ -9,8 +9,8 @@ jobs:
           image: ubuntu-2204:current
         #docker:
         #    - image: cimg/node:17.3.1
-        parallelism: 25
-        resource_class: large
+        parallelism: 6
+        resource_class: medium
         steps:
             - checkout
             - node/install-packages:
