@@ -108,6 +108,7 @@ jobs:
 workflows:
   build-aws-prod-image:
     jobs:
+      - snyk-docker-scan
       - build-image-no-dlc:
            context: production
       - build-image-dlc:
