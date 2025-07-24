@@ -63,21 +63,6 @@ commands:
       - store_artifacts:
           path: ~/project
           destination: snyk-report.json
-
-  static-code-analysis:
-    docker:
-      - image: cimg/node:lts
-    steps:
-      - checkout
-      - snyk/install
-      - run:
-          command: snyk version
-          name: Which version of snyk is installed
-      - run:
-          command: |
-             cd react
-             snyk code test
-          name: Run code scan
       
   build-image-cmds:
     steps:
@@ -118,6 +103,20 @@ jobs:
     steps:
       - build-image-cmds
 
+  static-code-analysis:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - checkout
+      - snyk/install
+      - run:
+          command: snyk version
+          name: Which version of snyk is installed
+      - run:
+          command: |
+             cd react
+             snyk code test
+          name: Run code scan
 
   custom-image-test:
     executor: custom-docker
