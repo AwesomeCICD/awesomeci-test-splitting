@@ -61,7 +61,7 @@ commands:
           command: |
               snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.json
       - store_artifacts:
-          path: .
+          path: ~/project
           destination: snyk-report.json
 
   static-code-analysis:
@@ -131,7 +131,7 @@ workflows:
     jobs:
       - snyk-docker-scan
       - static-code-analysis
-      
+
   build-aws-prod-image:
     jobs:
       - build-image-no-dlc:

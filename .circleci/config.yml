@@ -10,15 +10,6 @@ parameters:
     default: "/home/circleci/project/react"
 
 jobs:
-  dockerfile-scan:
-    machine:
-      image: ubuntu-2404:current
-    resource_class: medium
-    steps:
-      - checkout
-      - run: docker build . -t mydocker-image:latest
-
-
   react-tests:
     docker:
         - image: cimg/node:17.3.1
