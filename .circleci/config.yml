@@ -10,14 +10,20 @@ parameters:
     default: "/home/circleci/project/react"
 
 jobs:
-  build:
+  dockerfile-scan:
     docker:
       - image: cimg/node:lts
     steps:
       - checkout
-      #- run: |
-      #    cd react
-      #    npm ci
+      - run: docker build . -t mydocker-image:latest
+      - snyk/scan:
+          docker-image-name: mydocker-image:latest
+          target-file: "Dockerfile"
+  static-code-analysis:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - checkout
       - snyk/install
       - run:
           command: snyk version
@@ -57,4 +63,5 @@ workflows:
     react:
       jobs:
         - build
+        - dockerfile-scan
         #- react-tests
