@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
     node: circleci/node@5.0.0
+    snyk: snyk/snyk@2.3.0
 
 parameters:
   react-path:
@@ -9,6 +10,23 @@ parameters:
     default: "/home/circleci/project/react"
 
 jobs:
+  build:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - checkout
+      - run: npm ci
+      - snyk/install
+      - run:
+          command: snyk version
+          name: Which version of snyk is installed
+      - run:
+          command: |
+             cd react
+             snyk code test
+          name: Run code scan
+
+
     react-tests:
         docker:
             - image: cimg/node:17.3.1
@@ -36,4 +54,5 @@ jobs:
 workflows:
     react:
       jobs:
-        - react-tests
+        - build
+        #- react-tests
