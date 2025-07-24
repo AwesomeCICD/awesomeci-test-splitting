@@ -15,9 +15,9 @@ jobs:
       - image: cimg/node:lts
     steps:
       - checkout
-      - run: |
-          cd react
-          npm ci
+      #- run: |
+      #    cd react
+      #    npm ci
       - snyk/install
       - run:
           command: snyk version
