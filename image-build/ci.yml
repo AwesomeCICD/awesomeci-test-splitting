@@ -4,7 +4,7 @@ orbs:
   aws-cli: circleci/aws-cli@5.2.0
   node: circleci/node@7.1.0
   php: circleci/php@1.1.0
-
+  snyk: snyk/snyk@2.3.0
 
 parameters:
   role-name:
@@ -31,7 +31,6 @@ executors:
   machine-default:
     machine:
       image: ubuntu-2404:current
-      #docker_layer_caching: true
     resource_class: medium
     environment:
       ECR_IMAGE_REPO: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
@@ -48,6 +47,16 @@ executors:
     resource_class: small
 
 commands:
+  snyk-test:
+      - checkout
+      - run: 
+          name: Run docker build command
+          command: docker build . -t $FE_CUSTOM_DOCKER:$TAG --cache-from=$FE_CUSTOM_DOCKER
+      - snyk/scan:
+          docker-image-name: $FE_CUSTOM_DOCKER:$TAG
+          target-file: "Dockerfile"
+      - run: snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.json
+      
   build-image-cmds:
     steps:
       - checkout
@@ -72,6 +81,11 @@ commands:
           role_session_name: "CircleCI-${CIRCLE_WORKFLOW_ID}-${CIRCLE_JOB}"
 
 jobs:
+  snyk-docker-scan:
+    executor: machine-default-dlc
+    steps:
+      - snyk-test
+      
   build-image-dlc:
     executor: machine-default-dlc
     steps:
