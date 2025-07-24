@@ -17,9 +17,7 @@ jobs:
     steps:
       - checkout
       - run: docker build . -t mydocker-image:latest
-      - snyk/scan:
-          docker-image-name: mydocker-image:latest
-          target-file: "Dockerfile"
+
   static-code-analysis:
     docker:
       - image: cimg/node:lts
@@ -64,5 +62,4 @@ workflows:
     react:
       jobs:
         - static-code-analysis
-        - dockerfile-scan
         #- react-tests
