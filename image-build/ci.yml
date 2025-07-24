@@ -56,7 +56,13 @@ commands:
       - snyk/scan:
           docker-image-name: $FE_CUSTOM_DOCKER:$TAG
           target-file: "Dockerfile"
-      - run: snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.json
+      - run:
+          name: Snyk Test 
+          command: |
+              snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.json
+      - store_artifacts:
+          path: .
+          destination: snyk-report.json
       
   build-image-cmds:
     steps:
