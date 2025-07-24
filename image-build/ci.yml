@@ -106,6 +106,9 @@ jobs:
       - run: echo "hello"
 
 workflows:
+  snyk-scans:
+    jobs:
+      - snyk-docker-scan
   build-aws-prod-image:
     jobs:
       - snyk-docker-scan
