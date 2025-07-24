@@ -11,8 +11,9 @@ parameters:
 
 jobs:
   dockerfile-scan:
-    docker:
-      - image: cimg/node:lts
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
     steps:
       - checkout
       - run: docker build . -t mydocker-image:latest
