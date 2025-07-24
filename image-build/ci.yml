@@ -48,6 +48,7 @@ executors:
 
 commands:
   snyk-test:
+    steps:
       - checkout
       - run: 
           name: Run docker build command
