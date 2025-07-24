@@ -63,7 +63,7 @@ commands:
           target-file: "Dockerfile"
       - run:
           name: Snyk Test
-          when: on_failure
+          when: on_fail
           command: |
               snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.txt
       - store_artifacts:
