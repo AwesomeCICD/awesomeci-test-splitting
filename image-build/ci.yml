@@ -57,9 +57,10 @@ commands:
           docker-image-name: $FE_CUSTOM_DOCKER:$TAG
           target-file: "Dockerfile"
       - run:
-          name: Snyk Test 
+          name: Snyk Test
+          when: on_failure
           command: |
-              snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.json
+              snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.txt
       - store_artifacts:
           path: ~/project/snyk-report.json
           destination: snyk-reports-docker
@@ -116,10 +117,10 @@ jobs:
           command: |
              cd react
              snyk code test
-             snyk code test > static-code-analysis.json
+             snyk code test > static-code-analysis.txt
           name: Run code scan
       - store_artifacts:
-           path: ~/project/react/static-code-analysis.json
+           path: ~/project/react/static-code-analysis.txt
            destination: static-analysis
 
 
