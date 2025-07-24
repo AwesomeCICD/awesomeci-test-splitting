@@ -15,7 +15,8 @@ jobs:
       - image: cimg/node:lts
     steps:
       - checkout
-      - run: npm ci
+      - run: |
+          npm ci
       - snyk/install
       - run:
           command: snyk version
@@ -27,30 +28,30 @@ jobs:
           name: Run code scan
 
 
-    react-tests:
-        docker:
-            - image: cimg/node:17.3.1
-        resource_class: small
-        parallelism: 80
-        steps:
-            - checkout
-            - node/install-packages:
-                pkg-manager: yarn
-                app-dir: <<pipeline.parameters.react-path>>    
-            - run: mkdir <<pipeline.parameters.react-path>>/junit
-            - run:
-                name: Test application with Automatic test splitting
-                command: |
-                    cd <<pipeline.parameters.react-path>>
-                    TEST=$(circleci tests glob **/__tests__/*.js | circleci tests split --split-by=timings)
-                    yarn test $TEST
-            - run:
-                command: cp <<pipeline.parameters.react-path>>/junit.xml <<pipeline.parameters.react-path>>/junit/
-                when: always
-            - store_test_results:
-                path: <<pipeline.parameters.react-path>>/junit
-            - store_artifacts:
-                path: <<pipeline.parameters.react-path>>/junit
+  react-tests:
+    docker:
+        - image: cimg/node:17.3.1
+    resource_class: small
+    parallelism: 80
+    steps:
+        - checkout
+        - node/install-packages:
+            pkg-manager: yarn
+            app-dir: <<pipeline.parameters.react-path>>    
+        - run: mkdir <<pipeline.parameters.react-path>>/junit
+        - run:
+            name: Test application with Automatic test splitting
+            command: |
+                cd <<pipeline.parameters.react-path>>
+                TEST=$(circleci tests glob **/__tests__/*.js | circleci tests split --split-by=timings)
+                yarn test $TEST
+        - run:
+            command: cp <<pipeline.parameters.react-path>>/junit.xml <<pipeline.parameters.react-path>>/junit/
+            when: always
+        - store_test_results:
+            path: <<pipeline.parameters.react-path>>/junit
+        - store_artifacts:
+            path: <<pipeline.parameters.react-path>>/junit
 workflows:
     react:
       jobs:
