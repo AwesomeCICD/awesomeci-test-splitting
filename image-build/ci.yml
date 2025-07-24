@@ -67,7 +67,7 @@ commands:
           command: |
               snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.txt
       - store_artifacts:
-          path: ~/project/snyk-report.json
+          path: ~/project/snyk-report.txt
           destination: snyk-reports-docker
       
   build-image-cmds:
