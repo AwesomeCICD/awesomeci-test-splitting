@@ -13,6 +13,12 @@ parameters:
   aws-default-region:
     type: string
     default: "us-east-1"
+  ecr-repo:
+    type: string
+    default: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
+  docker-image-name:
+    type: string
+    default: "fieldeng-custom-docker"
 
 
 executors:
@@ -22,19 +28,18 @@ executors:
       docker_layer_caching: true
     resource_class: medium
     environment:
-      ECR_IMAGE_REPO: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
-      FE_CUSTOM_DOCKER: "fieldeng-custom-docker"
-      HELM_INSTALL_VERSION: "3.15.2"
+      ECR_IMAGE_REPO: <<pipeline.parameters.ecr-repo>>
+      FE_CUSTOM_DOCKER: <<pipeline.parameters.docker-image-name>>
       TAG: "dlc"
-      AWS_DEFAULT_REGION: "us-east-1"
+      AWS_DEFAULT_REGION: <<pipeline.parameters.aws-default-region>>
 
   machine-default:
     machine:
       image: ubuntu-2404:current
     resource_class: medium
     environment:
-      ECR_IMAGE_REPO: "992382483259.dkr.ecr.us-east-1.amazonaws.com"
-      FE_CUSTOM_DOCKER: "fieldeng-custom-docker"
+      ECR_IMAGE_REPO: <<pipeline.parameters.ecr-repo>>
+      FE_CUSTOM_DOCKER: <<pipeline.parameters.docker-image-name>>
       HELM_INSTALL_VERSION: "3.15.2"
       TAG: "latest"
       AWS_DEFAULT_REGION: "us-east-1"
