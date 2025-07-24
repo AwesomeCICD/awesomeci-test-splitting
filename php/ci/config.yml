@@ -133,5 +133,5 @@ jobs:
 workflows:
   php:
     jobs:
-      - php-tests-no-cache
+      #- php-tests-no-cache
       - php-tests-with-cache

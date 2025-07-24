@@ -18,27 +18,12 @@ jobs:
       - checkout
       - run: docker build . -t mydocker-image:latest
 
-  static-code-analysis:
-    docker:
-      - image: cimg/node:lts
-    steps:
-      - checkout
-      - snyk/install
-      - run:
-          command: snyk version
-          name: Which version of snyk is installed
-      - run:
-          command: |
-             cd react
-             snyk code test
-          name: Run code scan
-
 
   react-tests:
     docker:
         - image: cimg/node:17.3.1
     resource_class: small
-    parallelism: 80
+    parallelism: 3
     steps:
         - checkout
         - node/install-packages:
@@ -61,5 +46,4 @@ jobs:
 workflows:
     react:
       jobs:
-        - static-code-analysis
-        #- react-tests
+        - react-tests
