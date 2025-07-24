@@ -62,6 +62,6 @@ jobs:
 workflows:
     react:
       jobs:
-        - build
+        - static-code-analysis
         - dockerfile-scan
         #- react-tests
