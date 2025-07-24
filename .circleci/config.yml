@@ -16,6 +16,7 @@ jobs:
     steps:
       - checkout
       - run: |
+          cd react
           npm ci
       - snyk/install
       - run:
