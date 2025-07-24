@@ -61,8 +61,8 @@ commands:
           command: |
               snyk test --docker $FE_CUSTOM_DOCKER:$TAG --severity-threshold=low --file=Dockerfile --json > snyk-report.json
       - store_artifacts:
-          path: ~/project
-          destination: snyk-report.json
+          path: ~/project/snyk-report.json
+          destination: snyk-reports-docker
       
   build-image-cmds:
     steps:
@@ -116,7 +116,12 @@ jobs:
           command: |
              cd react
              snyk code test
+             snyk code test > static-code-analysis.json
           name: Run code scan
+      - store_artifacts:
+           path: ~/project/react/static-code-analysis.json
+           destination: static-analysis
+
 
   custom-image-test:
     executor: custom-docker
