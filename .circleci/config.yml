@@ -1,13 +1,13 @@
 version: 2.1
 
 orbs:
-    node: circleci/node@7
+    node: circleci/node@7.1.0
     snyk: snyk/snyk@2.3.0
 
 parameters:
   react-path:
     type: string
-    default: "/home/circleci/project/react/react"
+    default: "~/react"
 
 
 jobs:
@@ -30,15 +30,12 @@ jobs:
       - run:
           name: Test application with automatic test splitting
           command: |
-            set -eo pipefail
             TEST_FILES=$(circleci tests glob "src/**/__tests__/*.js" | circleci tests split --split-by=timings)
             yarn test --ci --runTestsByPath --passWithNoTests $TEST_FILES
       - store_test_results:
           path: junit
-          when: always
       - store_artifacts:
           path: junit
-          when: always
 workflows:
     react:
       jobs:
