@@ -7,7 +7,7 @@ orbs:
 parameters:
   react-path:
     type: string
-    default: "~/project/react"
+    default: "/home/circleci/project/react/"
 
 
 jobs:
