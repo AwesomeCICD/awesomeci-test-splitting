@@ -7,33 +7,47 @@ orbs:
 parameters:
   react-path:
     type: string
-    default: "/home/circleci/project/react"
+    default: "/home/circleci/project/react/"
+
 
 jobs:
   react-tests:
     docker:
-        - image: cimg/node:17.3.1
+      - image: cimg/node:24.11.0
     resource_class: small
-    parallelism: 80
+    parallelism: 45
+    working_directory: /home/circleci/project
+    environment:
+      CI: "true"
+      JEST_JUNIT_OUTPUT_DIR: junit
+      JEST_JUNIT_OUTPUT_NAME: junit-$CIRCLE_NODE_INDEX.xml
     steps:
-        - checkout
-        - node/install-packages:
-            pkg-manager: yarn
-            app-dir: <<pipeline.parameters.react-path>>    
-        - run: mkdir <<pipeline.parameters.react-path>>/junit
-        - run:
-            name: Test application with Automatic test splitting
-            command: |
-                cd <<pipeline.parameters.react-path>>
-                TEST=$(circleci tests glob **/__tests__/*.js | circleci tests split --split-by=timings)
-                yarn test $TEST
-        - run:
-            command: cp <<pipeline.parameters.react-path>>/junit.xml <<pipeline.parameters.react-path>>/junit/
-            when: always
-        - store_test_results:
-            path: <<pipeline.parameters.react-path>>/junit
-        - store_artifacts:
-            path: <<pipeline.parameters.react-path>>/junit
+      - checkout
+      - run:
+          name: Enable Corepack for Yarn 4
+          command: corepack enable
+      - restore_cache:
+          keys:
+            - v1-yarn4-deps-{{ checksum "react/.yarnrc.yml" }}-{{ checksum "react/yarn.lock" }}
+            - v1-yarn4-deps-
+      - run:
+          name: Install dependencies with Yarn 4
+          command: cd react && yarn install --immutable
+      - save_cache:
+          key: v1-yarn4-deps-{{ checksum "react/.yarnrc.yml" }}-{{ checksum "react/yarn.lock" }}
+          paths:
+            - react/node_modules
+      - run:
+          name: Test application with automatic test splitting
+          command: |
+            cd react
+            mkdir -p junit
+            TEST_FILES=$(circleci tests glob "src/__tests__/*.js" | circleci tests split --split-by=timings)
+            yarn test --ci --runTestsByPath --passWithNoTests $TEST_FILES
+      - store_test_results:
+          path: react/junit
+      - store_artifacts:
+          path: react/junit
 workflows:
     react:
       jobs:
