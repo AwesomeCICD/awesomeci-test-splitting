@@ -15,7 +15,7 @@ jobs:
     docker:
       - image: cimg/node:24.11.0
     resource_class: small
-    parallelism: 3
+    parallelism: 45
     working_directory: /home/circleci/project
     environment:
       CI: "true"

@@ -19,6 +19,10 @@ package-lock.json
 dist/
 coverage/
 
+# Jest test artifacts
+junit.xml
+junit/
+
 # Yarn 4
 .yarn/*
 !.yarn/patches
