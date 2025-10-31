@@ -2,6 +2,7 @@
   "name": "circleci-react-test-splitting",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "yarn@4.10.3",
   "dependencies": {
     "@babel/core": "7.9.0",
     "@svgr/webpack": "4.3.3",
@@ -145,5 +146,6 @@
     "presets": [
       "react-app"
     ]
-  }
+  },
+  "packageManager": "yarn@4.10.3"
 }

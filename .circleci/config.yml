@@ -23,9 +23,21 @@ jobs:
       JEST_JUNIT_OUTPUT_NAME: junit-$CIRCLE_NODE_INDEX.xml
     steps:
       - checkout
-      - node/install-packages:
-          pkg-manager: yarn
-          app-dir: <<pipeline.parameters.react-path>>
+      - run:
+          name: Enable Corepack for Yarn 4
+          command: corepack enable
+      - restore_cache:
+          keys:
+            - v1-yarn4-deps-{{ checksum "react/.yarnrc.yml" }}-{{ checksum "react/yarn.lock" }}
+            - v1-yarn4-deps-
+      - run:
+          name: Install dependencies with Yarn 4
+          command: yarn install --immutable
+      - save_cache:
+          key: v1-yarn4-deps-{{ checksum "react/.yarnrc.yml" }}-{{ checksum "react/yarn.lock" }}
+          paths:
+            - react/node_modules
+            - react/.yarn/cache
       - run: mkdir -p junit
       - run:
           name: Test application with automatic test splitting
