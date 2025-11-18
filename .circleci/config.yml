@@ -15,8 +15,11 @@ jobs:
     docker:
       - image: cimg/node:24.11.0
     resource_class: small
-    parallelism: 45
+    parallelism: <<parameters.parallelism>>
     working_directory: /home/circleci/project
+    parameters:
+      parallelism:
+        type: integer
     environment:
       CI: "true"
       JEST_JUNIT_OUTPUT_DIR: junit
@@ -51,4 +54,9 @@ jobs:
 workflows:
     react:
       jobs:
-        - react-tests
+        - react-tests:
+             name: "react-parallelism-45-containers"
+             parallelism: 45
+        - react-tests:
+             name: "react-no-parallelism-1-container"
+             parallelism: 1
