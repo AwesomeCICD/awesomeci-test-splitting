@@ -10,10 +10,22 @@ parameters:
     default: "/home/circleci/project/react/"
 
 executors:
-  docker-node:
+  serial-docker-node:
     docker:
       - image: cimg/node:24.11.0
     resource_class: small
+    parallelism: 1
+    working_directory: /home/circleci/project
+    environment:
+      CI: "true"
+      JEST_JUNIT_OUTPUT_DIR: junit
+      JEST_JUNIT_OUTPUT_NAME: junit-$CIRCLE_NODE_INDEX.xml
+
+  parallel-docker-node:
+    docker:
+      - image: cimg/node:24.11.0
+    resource_class: small
+    parallelism: 60
     working_directory: /home/circleci/project
     environment:
       CI: "true"
@@ -68,8 +80,7 @@ commands:
 
 jobs:
   serial-run:
-    executor: docker-node
-    parallelism: 1
+    executor: serial-docker-node
     steps:
       - serial-run
       - store_test_results:
@@ -78,8 +89,7 @@ jobs:
           path: react/junit
           
   parallel-run:
-    executor: docker-node
-    parallelism: 45
+    executor: parallel-docker-node
     steps:
       - prep-executor-serial
       - parallel-run
