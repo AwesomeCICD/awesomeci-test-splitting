@@ -13,7 +13,7 @@ executors:
   serial-docker-node:
     docker:
       - image: cimg/node:24.11.0
-    resource_class: small
+    resource_class: medium+
     working_directory: /home/circleci/project
     environment:
       CI: "true"
@@ -102,10 +102,10 @@ jobs:
 
           
 workflows:
-    react-parallel:
-      jobs:
-        - parallel-run:
-             name: "react-60x-parallelism"
+    #react-parallel:
+    #  jobs:
+    #    - parallel-run:
+    #         name: "react-60x-parallelism"
     react-serial:
       jobs:
         - serial-run:
