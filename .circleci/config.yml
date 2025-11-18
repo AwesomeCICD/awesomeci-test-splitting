@@ -17,6 +17,7 @@ executors:
     working_directory: /home/circleci/project
     environment:
       CI: "true"
+      NODE_OPTIONS: "--no-deprecation"
       JEST_JUNIT_OUTPUT_DIR: junit
       JEST_JUNIT_OUTPUT_NAME: junit-$CIRCLE_NODE_INDEX.xml
 
@@ -27,6 +28,7 @@ executors:
     working_directory: /home/circleci/project
     environment:
       CI: "true"
+      NODE_OPTIONS: "--no-deprecation"
       JEST_JUNIT_OUTPUT_DIR: junit
       JEST_JUNIT_OUTPUT_NAME: junit-$CIRCLE_NODE_INDEX.xml
 
@@ -63,7 +65,7 @@ commands:
           command: |
             cd react
             mkdir -p junit
-            yarn test --ci
+            yarn test --ci --verbose
     
   parallel-run:
     steps:
@@ -100,9 +102,11 @@ jobs:
 
           
 workflows:
-    react:
+    react-parallel:
       jobs:
         - parallel-run:
-             name: "react-parallelism-45-containers"
+             name: "react-60x-parallelism"
+    react-serial:
+      jobs:
         - serial-run:
-             name: "react-no-parallelism-1-container"
+             name: "react-1x-serial"
