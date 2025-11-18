@@ -5,11 +5,7 @@ executors:
     docker:
       - image: cimg/node:24.11.0
     resource_class: small
-    parallelism: <<parameters.parallelism>>
     working_directory: /home/circleci/project
-    parameters:
-      parallelism:
-        type: integer
     environment:
       CI: "true"
       JEST_JUNIT_OUTPUT_DIR: junit
@@ -64,6 +60,10 @@ parameters:
 jobs:
   serial-run:
     executor: docker-node
+    parallelism: <<parameters.parallelism>>
+    parameters:
+      parallelism:
+        type: integer
     steps:
       - prep-executor
       - serial-run
@@ -74,6 +74,9 @@ jobs:
           
   parallel-run:
     executor: docker-node
+    parameters:
+      parallelism:
+        type: integer
     steps:
       - prep-executor
       - parallel-run
