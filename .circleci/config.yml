@@ -46,8 +46,14 @@ commands:
           name: Enable Corepack for Yarn 4
           command: corepack enable
       - run:
+          name: Install dependencies with Yarn 4 (no cache)
+          command: cd react && yarn install --immutable
+      - run:
           name: Test application serially
-          command: yarn test --ci
+          command: |
+            cd react
+            mkdir -p junit
+            yarn test --ci
     
   parallel-run:
     steps:
@@ -75,7 +81,7 @@ jobs:
     executor: docker-node
     parallelism: 45
     steps:
-      - prep-executor
+      - prep-executor-serial
       - parallel-run
       - store_test_results:
           path: react/junit
