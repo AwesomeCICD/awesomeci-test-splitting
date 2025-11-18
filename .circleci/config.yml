@@ -1,17 +1,7 @@
 version: 2.1
 
-orbs:
-    node: circleci/node@5.0.0
-    snyk: snyk/snyk@2.3.0
-
-parameters:
-  react-path:
-    type: string
-    default: "/home/circleci/project/react/"
-
-
-jobs:
-  react-tests:
+executors:
+  docker-node:
     docker:
       - image: cimg/node:24.11.0
     resource_class: small
@@ -24,6 +14,9 @@ jobs:
       CI: "true"
       JEST_JUNIT_OUTPUT_DIR: junit
       JEST_JUNIT_OUTPUT_NAME: junit-$CIRCLE_NODE_INDEX.xml
+
+commands:
+  prep-executor:
     steps:
       - checkout
       - run:
@@ -40,6 +33,15 @@ jobs:
           key: v1-yarn4-deps-{{ checksum "react/.yarnrc.yml" }}-{{ checksum "react/yarn.lock" }}
           paths:
             - react/node_modules
+            
+  serial-run:
+    steps:
+      - run:
+          name: Test application serially
+          command: yarn test --ci
+    
+  parallel-run:
+    steps:
       - run:
           name: Test application with automatic test splitting
           command: |
@@ -47,16 +49,46 @@ jobs:
             mkdir -p junit
             TEST_FILES=$(circleci tests glob "src/__tests__/*.js" | circleci tests split --split-by=timings)
             yarn test --ci --runTestsByPath --passWithNoTests $TEST_FILES
+    
+
+orbs:
+    node: circleci/node@5.0.0
+    snyk: snyk/snyk@2.3.0
+
+parameters:
+  react-path:
+    type: string
+    default: "/home/circleci/project/react/"
+
+
+jobs:
+  serial-run:
+    executor: docker-node
+    steps:
+      - prep-executor
+      - serial-run
       - store_test_results:
           path: react/junit
       - store_artifacts:
           path: react/junit
+          
+  parallel-run:
+    executor: docker-node
+    steps:
+      - prep-executor
+      - parallel-run
+      - store_test_results:
+          path: react/junit
+      - store_artifacts:
+          path: react/junit
+
+          
 workflows:
     react:
       jobs:
-        - react-tests:
+        - parallel-run:
              name: "react-parallelism-45-containers"
              parallelism: 45
-        - react-tests:
+        - serial-run:
              name: "react-no-parallelism-1-container"
              parallelism: 1
