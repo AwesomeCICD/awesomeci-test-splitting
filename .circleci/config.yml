@@ -102,10 +102,10 @@ jobs:
 
           
 workflows:
-    #react-parallel:
-    #  jobs:
-    #    - parallel-run:
-    #         name: "react-60x-parallelism"
+    react-parallel:
+      jobs:
+        - parallel-run:
+             name: "react-60x-parallelism"
     react-serial:
       jobs:
         - serial-run:
