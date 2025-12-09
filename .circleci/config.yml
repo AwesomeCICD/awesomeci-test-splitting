@@ -20,7 +20,8 @@ executors:
       NODE_OPTIONS: "--no-deprecation"
       TEST_DELAY_MS: "2000"
       JEST_JUNIT_OUTPUT_DIR: junit
-      JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX}.xml
+      #JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX}.xml
+      JEST_JUNIT_OUTPUT_NAME: junit-<<pipeline.vcs.revision>>.xml
 
   parallel-docker-node:
     docker:
