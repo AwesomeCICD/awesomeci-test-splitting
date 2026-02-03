@@ -94,7 +94,7 @@ jobs:
           
   parallel-run:
     executor: parallel-docker-node
-    parallelism: 300
+    parallelism: 200
     steps:
       - prep-executor-serial
       - parallel-run
