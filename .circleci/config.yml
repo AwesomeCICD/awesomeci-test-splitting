@@ -94,7 +94,7 @@ jobs:
           
   parallel-run:
     executor: parallel-docker-node
-    parallelism: 200
+    parallelism: 1000
     steps:
       - prep-executor-serial
       - parallel-run
@@ -108,7 +108,7 @@ workflows:
     react-parallel:
       jobs:
         - parallel-run:
-             name: "react-60x-parallelism"
+             name: "react-1000x-parallelism"
     react-serial:
       jobs:
         - serial-run:
