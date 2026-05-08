@@ -35,6 +35,18 @@ executors:
       JEST_JUNIT_OUTPUT_DIR: junit
       JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX}.xml
 
+  parallel-docker-node-gen2:
+    docker:
+      - image: cimg/node:24.11.0
+    resource_class: small.gen2
+    working_directory: /home/circleci/project
+    environment:
+      CI: "true"
+      NODE_OPTIONS: "--no-deprecation"
+      TEST_DELAY_MS: "2"
+      JEST_JUNIT_OUTPUT_DIR: junit
+      JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX}.xml
+
 commands:
   prep-executor-serial:
     steps:
@@ -94,7 +106,18 @@ jobs:
           
   parallel-run:
     executor: parallel-docker-node
-    parallelism: 500
+    parallelism: 10
+    steps:
+      - prep-executor-serial
+      - parallel-run
+      - store_test_results:
+          path: react/junit
+      - store_artifacts:
+          path: react/junit
+
+  parallel-run-gen2:
+    executor: parallel-docker-node-gen2
+    parallelism: 10
     steps:
       - prep-executor-serial
       - parallel-run
@@ -105,11 +128,12 @@ jobs:
 
           
 workflows:
-    react-parallel:
+    gen1-docker:
       jobs:
         - parallel-run:
-             name: "react-500x-parallelism"
-    react-serial:
+             name: "gen1-docker"
+
+    gen2-docker:
       jobs:
-        - serial-run:
-             name: "react-1x-serial"
+        - parallel-run-gen2:
+             name: "gen2-docker"
