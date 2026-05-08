@@ -131,9 +131,9 @@ workflows:
     gen1-docker:
       jobs:
         - parallel-run:
-             name: "gen1-docker"
+             name: "test-splitting-gen1-docker"
 
     gen2-docker:
       jobs:
         - parallel-run-gen2:
-             name: "gen2-docker"
+             name: "test-splitting-gen2-docker"
