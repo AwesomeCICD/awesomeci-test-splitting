@@ -38,7 +38,7 @@ executors:
   parallel-docker-node-gen2:
     docker:
       - image: cimg/node:24.11.0
-    resource_class: small.gen2
+    resource_class: large.gen2
     working_directory: /home/circleci/project
     environment:
       CI: "true"
