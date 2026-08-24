@@ -1,48 +1,16 @@
-# AwesomeCI Test Splitting Demo
+# AwesomeCI Smarter Testing demo
 
-This repository demonstrates test splitting in a continuous integration (CI) pipeline using a large-scale, multi-language codebase. It contains two main components:
+Short live demo of CircleCI [Smarter Testing](https://circleci.com/docs/guides/test/getting-started-with-smarter-testing/) (beta): test impact analysis, dynamic test splitting, and auto-rerun of failed tests.
 
-- A PHP backend with a large number of test files.
-- A React frontend application with unit tests.
-- A simple way to build a Docker image and push it to AWS ECR
+**Start at [demo.md](demo.md)** — 5–10 minute presenter script, trigger clicks, and the exact CLI commands.
 
-The purpose is to simulate real-world projects with high test volume and showcase test parallelization and dynamic splitting strategies in CI systems like CircleCI.
+## What runs in CI
 
----
+Two workflows on Linux Docker by default:
 
-## Project Structure
+- `classic-full-suite` — discover the demo tests and run all of them (old `circleci tests glob` / `circleci tests split` path).
+- `smarter-testing` — `circleci testsuite run "demo tests"` using [`.circleci/test-suites.yml`](.circleci/test-suites.yml).
 
-```
-awesomeci-test-splitting-main/
-├── php/                  # PHP backend code
-│   ├── src/              # Source files
-│   └── tests/            # PHPUnit test files
-├── react/                # React frontend app
-│   ├── public/
-│   ├── src/              # Source code and unit tests
-│   └── config/           # Webpack and environment config
-└── scripts/              # Supporting scripts (e.g., push to ECR)
-```
+The demo path is the six Jest files in [`demo/`](demo/). The large generated React suite under `react/` is leftover from an older splitting showcase and is **not** run by these workflows.
 
----
-
-## Sample Config
-
-### CI Setup
-
-Use this repo to test:
-- Test splitting based on timing data
-- Running different workflows in parallel across React and PHP
-- Testing the value of CircleCI's DLC feature ([link](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/43/workflows/f46a8cd1-c255-40f4-8fdc-dce4aa8d56a0)]
-
----
-
-## Scripts
-
-- `scripts/push-ecr-image.sh` — Utility for pushing a Docker image to AWS ECR (used in some CI demos).
-
----
-
-## License
-
-MIT
+Set `run-macos: true` on **Trigger Pipeline** to run the same jobs on a CircleCI macOS VM instead of Linux. Details are in `demo.md`.

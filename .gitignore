@@ -15,6 +15,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-lock.yaml
 package-lock.json
+!demo/package-lock.json
 .env
 dist/
 coverage/
@@ -70,3 +71,7 @@ Thumbs.db
 # CircleCI local cache and test results
 .circleci/cache/
 .circleci/test-results/
+
+# chunk active sidecar tracking
+.chunk/sidecar.json
+.chunk/sidecar.*.json

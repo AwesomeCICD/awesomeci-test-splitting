@@ -1,0 +1,15 @@
+---
+name: demo tests
+discover: demo/discover.sh
+run: JEST_JUNIT_OUTPUT_FILE="<< outputs.junit >>" demo/jest.sh --ci --runInBand --runTestsByPath << test.atoms >>
+analysis: demo/jest.sh --ci --runInBand --coverage --coverageReporters=lcov --coverageDirectory=/tmp/tia-coverage --runTestsByPath << test.atoms >> && cp /tmp/tia-coverage/lcov.info "<< outputs.lcov >>"
+outputs:
+  junit: test-reports/junit.xml
+options:
+  test-impact-analysis: true
+  dynamic-test-splitting: true
+  max-auto-rerun: 1
+  full-test-run-paths:
+    - demo/package.json
+    - demo/package-lock.json
+    - .circleci/*.yml

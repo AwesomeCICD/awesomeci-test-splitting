@@ -1,0 +1,12 @@
+{
+  "name": "smarter-testing-demo",
+  "private": true,
+  "description": "Small Jest suite for the CircleCI Smarter Testing live demo",
+  "scripts": {
+    "test": "jest --config jest.config.cjs"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0"
+  }
+}

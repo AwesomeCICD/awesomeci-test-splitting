@@ -1,115 +1,167 @@
 version: 2.1
 
-orbs:
-    node: circleci/node@5.0.0
-    snyk: snyk/snyk@2.3.0
-
 parameters:
-  react-path:
-    type: string
-    default: "/home/circleci/project/react/"
+  run-macos:
+    type: boolean
+    default: false
+  run-classic:
+    type: boolean
+    default: true
+  run-smarter:
+    type: boolean
+    default: true
 
 executors:
-  serial-docker-node:
+  linux-node:
     docker:
       - image: cimg/node:24.11.0
-    resource_class: medium+
-    working_directory: /home/circleci/project
+    resource_class: medium
     environment:
       CI: "true"
-      NODE_OPTIONS: "--no-deprecation"
-      TEST_DELAY_MS: "2000"
-      JEST_JUNIT_OUTPUT_DIR: junit
-      #JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX}.xml
-      JEST_JUNIT_OUTPUT_NAME: junit-<<pipeline.vcs.revision>>.xml
-
-  parallel-docker-node:
-    docker:
-      - image: cimg/node:24.11.0
-    resource_class: small
-    working_directory: /home/circleci/project
+      DEMO_TEST_DELAY_MS: "2500"
+  macos-node:
+    macos:
+      xcode: "26.6.0"
+    resource_class: m4pro.medium
     environment:
       CI: "true"
-      NODE_OPTIONS: "--no-deprecation"
-      TEST_DELAY_MS: "2"
-      JEST_JUNIT_OUTPUT_DIR: junit
-      JEST_JUNIT_OUTPUT_NAME: junit-${CIRCLE_NODE_INDEX}.xml
+      DEMO_TEST_DELAY_MS: "2500"
 
 commands:
-  prep-executor-serial:
+  ensure-node:
+    steps:
+      - run:
+          name: Ensure Node is on PATH
+          command: |
+            if ! command -v node >/dev/null 2>&1; then
+              echo 'export NVM_DIR="$HOME/.nvm"' >> "$BASH_ENV"
+              echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' >> "$BASH_ENV"
+            fi
+      - run:
+          name: Print Node version
+          command: node --version && npm --version
+
+  install-demo:
     steps:
       - checkout
-      - run:
-          name: Enable Corepack for Yarn 4
-          command: corepack enable
+      - ensure-node
       - restore_cache:
           keys:
-            - v1-yarn4-deps-{{ checksum "react/.yarnrc.yml" }}-{{ checksum "react/yarn.lock" }}
-            - v1-yarn4-deps-
+            - demo-npm-v1-{{ checksum "demo/package-lock.json" }}
+            - demo-npm-v1-
       - run:
-          name: Install dependencies with Yarn 4
-          command: cd react && yarn install --immutable
+          name: Install demo dependencies
+          command: npm ci
+          working_directory: demo
       - save_cache:
-          key: v1-yarn4-deps-{{ checksum "react/.yarnrc.yml" }}-{{ checksum "react/yarn.lock" }}
+          key: demo-npm-v1-{{ checksum "demo/package-lock.json" }}
           paths:
-            - react/node_modules
-            
-  serial-run:
-    steps:
-      - checkout
-      - run:
-          name: Enable Corepack for Yarn 4
-          command: corepack enable
-      - run:
-          name: Install dependencies with Yarn 4 (no cache)
-          command: cd react && yarn install --immutable
-      - run:
-          name: Test application serially
-          command: |
-            cd react
-            mkdir -p junit
-            yarn test --ci --verbose
-    
-  parallel-run:
-    steps:
-      - run:
-          name: Test application with automatic test splitting
-          command: |
-            cd react
-            mkdir -p junit
-            TEST_FILES=$(circleci tests glob "src/__tests__/*.js" | circleci tests split --split-by=timings)
-            yarn test --ci --runTestsByPath --passWithNoTests $TEST_FILES
+            - ~/.npm
 
+  ensure-testsuite:
+    steps:
+      - run:
+          name: Ensure testsuite CLI
+          command: |
+            if circleci testsuite --help >/dev/null 2>&1; then
+              echo "circleci testsuite is available"
+              exit 0
+            fi
+            if circleci extension install --help >/dev/null 2>&1; then
+              circleci extension install testsuite
+              exit 0
+            fi
+            echo "Installing the CircleCI CLI, then the testsuite extension"
+            curl -fLSs https://cli.circleci.com/install | bash
+            circleci extension install testsuite
 
 jobs:
-  serial-run:
-    executor: serial-docker-node
+  classic-tests:
+    parameters:
+      os:
+        type: executor
+        default: linux-node
+    executor: << parameters.os >>
     parallelism: 1
     steps:
-      - serial-run
+      - install-demo
+      - run:
+          name: Discover and run the full suite
+          command: |
+            mkdir -p test-reports
+            echo "Classic path: discover every demo test, then run all of them."
+            TEST_FILES=$(circleci tests glob "demo/src/**/*.test.js")
+            echo "Discovered tests:"
+            echo "${TEST_FILES}"
+            # Optional old splitter — with parallelism 1 this is a no-op, but
+            # the command is the historic "dumb CI" pattern.
+            SPLIT_FILES=$(echo "${TEST_FILES}" | circleci tests split --split-by=timings)
+            echo "This node will run:"
+            echo "${SPLIT_FILES}"
+            JEST_JUNIT_OUTPUT_FILE="test-reports/junit.xml" \
+              demo/jest.sh --ci --runInBand --runTestsByPath ${SPLIT_FILES}
       - store_test_results:
-          path: react/junit
+          path: test-reports
       - store_artifacts:
-          path: react/junit
-          
-  parallel-run:
-    executor: parallel-docker-node
-    parallelism: 50
-    steps:
-      - prep-executor-serial
-      - parallel-run
-      - store_test_results:
-          path: react/junit
-      - store_artifacts:
-          path: react/junit
+          path: test-reports
 
-          
+  smarter-tests:
+    parameters:
+      os:
+        type: executor
+        default: linux-node
+    executor: << parameters.os >>
+    parallelism: 2
+    steps:
+      - install-demo
+      - ensure-testsuite
+      - run:
+          name: Run smarter tests
+          command: |
+            mkdir -p test-reports
+            circleci testsuite run "demo tests"
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
+
 workflows:
-    react-parallel:
-      jobs:
-        - parallel-run:
-             name: "react-50x-parallelism"
-    react-serial:
-      jobs:
-        - serial-run:
-             name: "react-1x-serial"
+  classic-full-suite:
+    when:
+      and:
+        - equal: [true, << pipeline.parameters.run-classic >>]
+        - equal: [false, << pipeline.parameters.run-macos >>]
+    jobs:
+      - classic-tests:
+          name: classic-tests
+          os: linux-node
+
+  smarter-testing:
+    when:
+      and:
+        - equal: [true, << pipeline.parameters.run-smarter >>]
+        - equal: [false, << pipeline.parameters.run-macos >>]
+    jobs:
+      - smarter-tests:
+          name: smarter-tests
+          os: linux-node
+
+  classic-full-suite-macos:
+    when:
+      and:
+        - equal: [true, << pipeline.parameters.run-classic >>]
+        - equal: [true, << pipeline.parameters.run-macos >>]
+    jobs:
+      - classic-tests:
+          name: classic-tests-macos
+          os: macos-node
+
+  smarter-testing-macos:
+    when:
+      and:
+        - equal: [true, << pipeline.parameters.run-smarter >>]
+        - equal: [true, << pipeline.parameters.run-macos >>]
+    jobs:
+      - smarter-tests:
+          name: smarter-tests-macos
+          os: macos-node
