@@ -1,8 +1,9 @@
 {
   "name": "smarter-testing-demo",
   "private": true,
-  "description": "Small Jest suite for the CircleCI Smarter Testing live demo",
+  "description": "Large Jest e-commerce suite for the CircleCI Smarter Testing live demo",
   "scripts": {
+    "generate": "node generate.mjs",
     "test": "jest --config jest.config.cjs"
   },
   "devDependencies": {

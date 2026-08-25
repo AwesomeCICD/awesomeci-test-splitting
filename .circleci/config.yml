@@ -18,14 +18,12 @@ executors:
     resource_class: medium
     environment:
       CI: "true"
-      DEMO_TEST_DELAY_MS: "2500"
   macos-node:
     macos:
       xcode: "26.6.0"
     resource_class: m4pro.medium
     environment:
       CI: "true"
-      DEMO_TEST_DELAY_MS: "2500"
 
 commands:
   ensure-node:
@@ -76,28 +74,35 @@ commands:
             circleci extension install testsuite
 
 jobs:
+  # Deliberately unoptimized: always the full suite, 15-wide, split by name
+  # (not timings), Jest --runInBand, and a per-test delay. Unbalanced shards
+  # are the point — later-alphabet domains (users, warehouse) are heavier.
   classic-tests:
     parameters:
       os:
         type: executor
         default: linux-node
+      parallelism:
+        type: integer
+        default: 15
     executor: << parameters.os >>
-    parallelism: 1
+    parallelism: << parameters.parallelism >>
+    environment:
+      DEMO_TEST_DELAY_MS: "300"
     steps:
       - install-demo
       - run:
           name: Discover and run the full suite
           command: |
             mkdir -p test-reports
-            echo "Classic path: discover every demo test, then run all of them."
+            echo "Classic path: run every demo test. No TIA, no test-suites, no timings split."
+            echo "Split by name only (circleci tests split --split-by=name). Parallelism ${CIRCLE_NODE_TOTAL}."
             TEST_FILES=$(circleci tests glob "demo/src/**/*.test.js")
-            echo "Discovered tests:"
-            echo "${TEST_FILES}"
-            # Optional old splitter — with parallelism 1 this is a no-op, but
-            # the command is the historic "dumb CI" pattern.
-            SPLIT_FILES=$(echo "${TEST_FILES}" | circleci tests split --split-by=timings)
-            echo "This node will run:"
-            echo "${SPLIT_FILES}"
+            echo "Discovered $(printf '%s\n' "${TEST_FILES}" | sed '/^$/d' | wc -l | tr -d ' ') test files."
+            # Naive split — do not use --split-by=timings. Uneven shards are expected.
+            SPLIT_FILES=$(printf '%s\n' "${TEST_FILES}" | circleci tests split --split-by=name)
+            echo "This node (index ${CIRCLE_NODE_INDEX}) will run:"
+            printf '%s\n' "${SPLIT_FILES}"
             JEST_JUNIT_OUTPUT_FILE="test-reports/junit.xml" \
               demo/jest.sh --ci --runInBand --runTestsByPath ${SPLIT_FILES}
       - store_test_results:
@@ -105,13 +110,20 @@ jobs:
       - store_artifacts:
           path: test-reports
 
+  # Optimized to win: higher parallelism, dynamic split + timing data + TIA,
+  # Jest workers, short per-test delay. Feature-branch wow is one module.
   smarter-tests:
     parameters:
       os:
         type: executor
         default: linux-node
+      parallelism:
+        type: integer
+        default: 30
     executor: << parameters.os >>
-    parallelism: 2
+    parallelism: << parameters.parallelism >>
+    environment:
+      DEMO_TEST_DELAY_MS: "15"
     steps:
       - install-demo
       - ensure-testsuite
@@ -135,6 +147,7 @@ workflows:
       - classic-tests:
           name: classic-tests
           os: linux-node
+          parallelism: 15
 
   smarter-testing:
     when:
@@ -145,7 +158,10 @@ workflows:
       - smarter-tests:
           name: smarter-tests
           os: linux-node
+          parallelism: 30
 
+  # macOS is the same jobs on a different executor — not the timing showcase.
+  # Parallelism is 2 so we do not spin 15–30 macOS VMs. Linux is the contrast.
   classic-full-suite-macos:
     when:
       and:
@@ -155,6 +171,7 @@ workflows:
       - classic-tests:
           name: classic-tests-macos
           os: macos-node
+          parallelism: 2
 
   smarter-testing-macos:
     when:
@@ -165,3 +182,4 @@ workflows:
       - smarter-tests:
           name: smarter-tests-macos
           os: macos-node
+          parallelism: 2

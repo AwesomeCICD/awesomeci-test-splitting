@@ -1,0 +1,82 @@
+{
+  "generatedBy": "demo/generate.mjs",
+  "tiaHook": "demo/src/pricing/quote.js",
+  "tiaHookTests": "demo/src/pricing/quote.test.js",
+  "domains": [
+    {
+      "name": "cart",
+      "modules": 14,
+      "testsPerModule": 32,
+      "tests": 448
+    },
+    {
+      "name": "catalog",
+      "modules": 14,
+      "testsPerModule": 32,
+      "tests": 448
+    },
+    {
+      "name": "checkout",
+      "modules": 15,
+      "testsPerModule": 36,
+      "tests": 540
+    },
+    {
+      "name": "coupons",
+      "modules": 15,
+      "testsPerModule": 36,
+      "tests": 540
+    },
+    {
+      "name": "inventory",
+      "modules": 16,
+      "testsPerModule": 40,
+      "tests": 640
+    },
+    {
+      "name": "payments",
+      "modules": 16,
+      "testsPerModule": 42,
+      "tests": 672
+    },
+    {
+      "name": "pricing",
+      "modules": 18,
+      "testsPerModule": 44,
+      "tests": 792
+    },
+    {
+      "name": "recommendations",
+      "modules": 18,
+      "testsPerModule": 46,
+      "tests": 828
+    },
+    {
+      "name": "shipping",
+      "modules": 20,
+      "testsPerModule": 50,
+      "tests": 1000
+    },
+    {
+      "name": "tax",
+      "modules": 20,
+      "testsPerModule": 52,
+      "tests": 1040
+    },
+    {
+      "name": "users",
+      "modules": 22,
+      "testsPerModule": 56,
+      "tests": 1232
+    },
+    {
+      "name": "warehouse",
+      "modules": 24,
+      "testsPerModule": 64,
+      "tests": 1536
+    }
+  ],
+  "moduleCount": 212,
+  "testFileCount": 212,
+  "testCount": 9716
+}
