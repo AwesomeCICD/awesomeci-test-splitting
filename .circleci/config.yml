@@ -110,8 +110,9 @@ jobs:
       - store_artifacts:
           path: test-reports
 
-  # Optimized to win: higher parallelism, dynamic split + timing data + TIA,
-  # Jest workers, short per-test delay. Feature-branch wow is one module.
+  # Optimized to win: TIA + dynamic split on 2 nodes (enough to show a
+  # split without 29 idle containers), Jest workers, short per-test delay.
+  # Feature-branch wow is one module vs classic's 15-wide full suite.
   smarter-tests:
     parameters:
       os:
@@ -119,7 +120,7 @@ jobs:
         default: linux-node
       parallelism:
         type: integer
-        default: 30
+        default: 2
     executor: << parameters.os >>
     parallelism: << parameters.parallelism >>
     environment:
@@ -158,10 +159,10 @@ workflows:
       - smarter-tests:
           name: smarter-tests
           os: linux-node
-          parallelism: 30
+          parallelism: 2
 
   # macOS is the same jobs on a different executor — not the timing showcase.
-  # Parallelism is 2 so we do not spin 15–30 macOS VMs. Linux is the contrast.
+  # Parallelism is 2 so we do not spin 15 macOS VMs. Linux classic is the contrast.
   classic-full-suite-macos:
     when:
       and:
