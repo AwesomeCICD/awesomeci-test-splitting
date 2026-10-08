@@ -4,6 +4,9 @@
 #   scripts/demo/trigger-run.sh <branch> [param=value ...]
 #   scripts/demo/trigger-run.sh vijay-2026-10-08-demo-tia-withholding run-classic=false
 #
+# Works from any directory. It reads no files and runs no git commands; the
+# branch is resolved by CircleCI, so it doesn't need to exist locally.
+#
 # Calls POST /api/v3/runs (https://circleci.com/docs/api/v3) through `circleci api`.
 # It names the project's GitHub App pipeline definition explicitly: plain
 # `circleci run trigger` picks the implicit OAuth definition, whose SSH checkout

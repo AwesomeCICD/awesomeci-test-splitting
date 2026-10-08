@@ -15,6 +15,7 @@
 //   GET  /api/v3/jobs/:id/tests            (JSON Lines)
 //   POST /api/v3/analysis/charges          (experimental; credits per workflow)
 // --branch resolves the latest run with `circleci run list`, so the CLI must be logged in.
+// Works from any directory: the project is named explicitly and no local files are read.
 
 import { execFileSync } from "node:child_process";
 

@@ -4,6 +4,7 @@
 #
 #   scripts/demo/tia-change.sh                              # demo/src/tax/withholding.js
 #   scripts/demo/tia-change.sh demo/src/pricing/quote.js
+#   bash /path/to/repo/scripts/demo/tia-change.sh /path/to/repo/demo/src/pricing/quote.js
 #   NO_PUSH=1 scripts/demo/tia-change.sh                    # commit locally, do not push
 #   BASE_BRANCH=some-branch scripts/demo/tia-change.sh      # branch off something else
 #   BRANCH=vijay-2026-10-08-demo-tia-withholding scripts/demo/tia-change.sh   # fixed branch name
@@ -11,13 +12,31 @@
 # The edit is a behaviour-preserving refactor of the module's fee path, so the
 # selected tests still pass. If the module was already refactored, a dated
 # comment is appended instead (a comment still changes the file hash).
+#
+# Works from any directory: the repo is found from this script's location, and
+# the module may be an absolute path or a path relative to the repo root.
 set -euo pipefail
 
 BASE_BRANCH="${BASE_BRANCH:-vijay-2026-10-08-demo}"
 MODULE="${1:-demo/src/tax/withholding.js}"
 APP_URL="https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting"
 
-cd "$(git rev-parse --show-toplevel)"
+ROOT="$(cd "$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)" && pwd -P)"
+
+if [[ "${MODULE}" == /* ]]; then
+  if [[ ! -f "${MODULE}" ]]; then
+    echo "No such file: ${MODULE}" >&2
+    exit 1
+  fi
+  abs="$(cd "$(dirname "${MODULE}")" && pwd -P)/$(basename "${MODULE}")"
+  if [[ "${abs}" != "${ROOT}/"* ]]; then
+    echo "${MODULE} is outside the repo (${ROOT})." >&2
+    exit 1
+  fi
+  MODULE="${abs#"${ROOT}/"}"
+fi
+
+cd "${ROOT}"
 
 if [[ ! -f "${MODULE}" || "${MODULE}" == *.test.js ]]; then
   echo "Not a source module: ${MODULE}" >&2
@@ -58,7 +77,7 @@ echo "Created ${BRANCH} with one change to ${MODULE}:"
 git --no-pager show --stat --format='  %h %s' HEAD
 
 if [[ "${NO_PUSH:-}" == "1" ]]; then
-  echo "NO_PUSH=1: not pushing. Push later with: git push -u origin ${BRANCH}"
+  echo "NO_PUSH=1: not pushing. Push later with: git -C ${ROOT} push -u origin ${BRANCH}"
 else
   git push --quiet -u origin "${BRANCH}"
   echo
@@ -70,4 +89,4 @@ fi
 echo
 echo "Expected in the smarter-testing job: only ${TEST_FILE} is selected; every other test atom is skipped."
 echo "classic-full-suite still runs all 212 files on 15 nodes."
-echo "Go back with: git switch ${BASE_BRANCH}"
+echo "Go back with: git -C ${ROOT} switch ${BASE_BRANCH}"
