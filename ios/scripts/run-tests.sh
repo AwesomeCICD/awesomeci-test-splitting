@@ -17,13 +17,10 @@ for file in "$@"; do
 done
 filter="^MobileCoreTests\\.($(IFS='|'; echo "${classes[*]}"))/"
 
-raw="$(mktemp -d)/xunit.xml"
-swift test --package-path "${ROOT}" --disable-swift-testing --filter "${filter}" --xunit-output "${raw}"
-status=$?
+log="$(mktemp)"
+swift test --package-path "${ROOT}" --disable-swift-testing --filter "${filter}" 2>&1 | tee "${log}"
+status=${PIPESTATUS[0]}
 
-# swift test records only the class name; add the file each case came from.
 mkdir -p "$(dirname "${OUT}")"
-[[ -f "${raw}" ]] || exit "${status}"
-sed -E 's|<testcase classname="MobileCoreTests\.([A-Za-z0-9_]+)"|<testcase file="ios/Tests/MobileCoreTests/\1.swift" classname="MobileCoreTests.\1"|g' \
-  "${raw}" > "${OUT}"
+"${ROOT}/scripts/xctest-to-junit.sh" < "${log}" > "${OUT}"
 exit "${status}"
