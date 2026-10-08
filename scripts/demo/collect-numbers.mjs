@@ -19,7 +19,12 @@ import { execFileSync } from "node:child_process";
 const BASE = "https://circleci.com/api/v3";
 const PROJECT_SLUG = "gh/AwesomeCICD/awesomeci-test-splitting";
 const APP_URL = "https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting";
-const TEST_STEPS = ["Run smarter tests", "Discover and run the full suite"];
+const TEST_STEPS = [
+  "Run smarter tests",
+  "Discover and run the full suite",
+  "Run Android unit tests",
+  "Run iOS unit tests",
+];
 
 const token = process.env.CIRCLE_TOKEN;
 if (!token) {
