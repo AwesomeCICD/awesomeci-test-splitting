@@ -10,7 +10,8 @@ function quote(amount, factor) {
 }
 
 function quoteWithFee(amount, factor, fee) {
-  return quote(amount, factor) + fee;
+  const base = quote(amount, factor);
+  return base + fee;
 }
 
 function clampQuote(value, min, max) {
