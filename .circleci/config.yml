@@ -10,9 +10,11 @@ parameters:
   run-smarter:
     type: boolean
     default: true
+  # TEMPORARY on feat/fe-2429-container-runner: true so pushes test only on
+  # the runner. Flip back to false before merging.
   run-runner:
     type: boolean
-    default: false
+    default: true
 
 executors:
   linux-node:
