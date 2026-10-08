@@ -13,6 +13,10 @@ Four workflows, all on push:
 - `android-smarter-testing` — `circleci testsuite run "android unit tests"`: a small Kotlin/JVM module in [`android/`](android/) with JUnit 4 tests via Gradle, on `cimg/android`, 2-wide. Coverage for TIA comes from JaCoCo, converted to LCOV.
 - `ios-smarter-testing` — `circleci testsuite run "ios unit tests"`: a small Swift package in [`ios/`](ios/) with XCTest via `swift test`, on the macOS executor, 2-wide. Coverage for TIA comes from `llvm-cov` LCOV export.
 
+Both Jest workflows use the same settings (`--maxWorkers=2`, `DEMO_TEST_DELAY_MS=15`), so they differ only in parallelism, split strategy and test selection.
+
+`scripts/demo/collect-numbers.mjs` summarises a run. Its duration column is the job duration shown on the CircleCI job page; workflow wall clock is a separate column.
+
 The main demo path is the generated e-commerce suite in [`demo/`](demo/) (212 modules). The large generated React suite under `react/` is leftover from an older splitting showcase and is **not** run by these workflows.
 
 Pipeline parameters `run-classic`, `run-smarter`, `run-android` and `run-ios` (all default `true`) switch workflows off for API-triggered runs. `scripts/demo/trigger-run.sh` starts one from the CLI.
