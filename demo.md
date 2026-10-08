@@ -55,7 +55,9 @@ Helpers:
 | Smarter, full suite (dynamic split) | [pipeline 233](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/233/workflows/4926a41b-976e-44a3-b002-a8d0c981441f) | 2 | 9,716 | 60s | 22 |
 | Smarter, one-module change (TIA) | [pipeline 236](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/236/workflows/a8931066-89d4-4da3-84b7-e5e8501f6eaf) | 2 | 52 (1 file, 211 skipped) | 18s | 7 |
 | Smarter, flaky test (TIA + auto rerun) | [pipeline 237](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/237/workflows/1749229f-2d04-44a3-ab6b-f213718c2710) | 2 | 8 (failed once, rerun passed) | 16s | 7 |
-| Classic, same flaky test | [pipeline 232](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/232/workflows/9c08aefb-1f3a-48c9-8ed5-d8d6fb79a58b) | 15 | 9,724 (1 failed) | 3m 52s, red | 551 |
+| Classic, same one-module change | [pipeline 236](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/236/workflows/4cf86539-e5be-4fb3-b256-785f675377e7) | 15 | 9,716 | 3m 46s | 547 |
+| Classic, same flaky test | [pipeline 237](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/237/workflows/b7def7e1-eec3-44aa-be7d-744050056289) | 15 | 9,724 (1 failed) | 3m 48s, red | 546 |
+| Smarter, docs-only change | [pipeline 238](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/238/workflows/31b5976a-131b-4c41-ab3c-353d78de2a16) | 2 | 0 (all 212 files skipped) | 14s | 6 |
 
 Headline ratios: dynamic split runs the whole suite for **69% fewer credits** than the like-for-like 15-node split (22 vs 71), at the cost of about 22 seconds. TIA on a one-module change uses **90% fewer credits** than the like-for-like classic run (7 vs 71) and finishes in less than half the time. Wall clock is workflow created to ended, so it includes container spin-up.
 
@@ -112,7 +114,7 @@ Do these the day before and again 30 minutes before.
    3. Classic baseline: pipeline 230 `classic-tests` job.
    4. TIA: pipeline 236 `smarter-tests` job, Tests tab.
    5. Like-for-like: pipeline 233 workflow map.
-   6. Flaky: pipeline 237 `smarter-tests` job (step output) and pipeline 232 classic (red).
+   6. Flaky: pipeline 237, both the `smarter-tests` job (step output) and `classic-full-suite` (red).
    7. Editor on `.circleci/test-suites.yml` and `demo/src/tax/withholding.js`.
    8. Terminal at the repo root, font size up, `clear`ed.
 
@@ -128,7 +130,7 @@ Do these the day before and again 30 minutes before.
 | 3:30-5:30 | One config file, one command (kick off the live TIA push first) | Terminal, editor |
 | 5:30-8:30 | Test impact analysis | CircleCI, live branch or pipeline 236 |
 | 8:30-10:30 | Dynamic splitting, 2 nodes vs 15 | CircleCI, pipeline 233 |
-| 10:30-12:30 | Flaky test: auto rerun and rerun from failed | CircleCI, pipelines 237 and 232 |
+| 10:30-12:30 | Flaky test: auto rerun and rerun from failed | CircleCI, pipeline 237 |
 | 12:30-14:00 | Why it matters in a regulated shop | Slide |
 | 14:00-15:00 | Pilot plan and the ask | Slide |
 | +5 min | Q&A buffer | |
@@ -234,7 +236,7 @@ Expected: `demo/src/tax/withholding.test.js`, nothing else.
 **Say:**
 
 - "We changed one tax module. Smarter Testing knew, from coverage on the default branch, that exactly one test file exercises it."
-- "52 tests instead of 9,716. 18 seconds and 7 credits against 71 credits for the like-for-like classic run, and 554 for the default classic run on this branch."
+- "52 tests instead of 9,716. 18 seconds and 7 credits against 71 credits for the like-for-like classic run, and 547 for the default classic run on the same commit (pipeline 236)."
 - "Selection is conservative: new tests, tests that failed last time on this branch, and tests covering any changed or deleted file always run."
 - "And it is your rules: `full-test-run-paths` forces a full run, `test-selection-rules` pins tests that must always run, and the default branch runs everything while it refreshes the impact data."
 
@@ -272,7 +274,7 @@ Expected: `demo/src/tax/withholding.test.js`, nothing else.
 
    Job green. The Tests tab still records the failed attempt.
 
-2. Pipeline 232 `classic-full-suite` on the same code: red, 3m 52s, 551 credits, for one flaky test.
+2. Pipeline 237 `classic-full-suite` on the same commit: red, 3m 48s, 546 credits, for one flaky test.
 
 **Say:**
 
