@@ -2,7 +2,7 @@
 
 Short live demo of CircleCI [Smarter Testing](https://circleci.com/docs/guides/test/getting-started-with-smarter-testing/) (beta): test impact analysis, dynamic test splitting, and auto-rerun of failed tests.
 
-**Start at [demo.md](demo.md)** — 5–10 minute presenter script, trigger clicks, and the exact CLI commands.
+**Start at [demo.md](demo.md)** — 15-minute presenter script, pre-staged branches, real CI numbers, and the exact CLI commands.
 
 ## What runs in CI
 

@@ -1,195 +1,320 @@
-# Smarter Testing live demo (5–10 min)
+# Smarter Testing live demo (15 min)
 
-Presenter script. Start here. The audience should leave knowing why Smarter Testing is what you use when a huge suite would otherwise crush you.
+Presenter script for a regulated financial services audience (retirement, wealth, payments). Mostly live screenshare of the CircleCI web app, a terminal and this repo, with a few slides as bookends (kept outside this public repo).
 
-Smarter Testing is in **beta**. The org must be on CircleCI cloud. There is no extra product flag in this repo, but if `circleci testsuite` fails in CI, the org may still need beta access.
+The audience should leave knowing three things:
 
-## Scale (what you are showing)
+1. Test impact analysis (TIA) runs only the tests a change touches, and logs why each test was selected.
+2. Dynamic test splitting does the full suite on 2 nodes for a third of the credits of a 15-node static split.
+3. None of this weakens controls: the default branch still runs everything, and you decide what always runs.
+
+## Availability (say this accurately)
+
+- Smarter Testing (`circleci testsuite` plus TIA, dynamic test splitting and auto rerun) is a **CircleCI cloud** feature. The docs list the Free, Performance and Scale cloud plans and all supported VCS providers.
+- It is **not available on CircleCI Server**. Server keeps `circleci tests glob` / `circleci tests split`.
+- The built-in parts of `circleci testsuite` (timing-based static splitting, rerun only failed tests on "Rerun workflow from failed") are free. TIA, dynamic test splitting and auto rerun are the Smarter Testing features, each enabled independently in `.circleci/test-suites.yml`.
+- Earlier material called Smarter Testing a beta. Check the current release status before quoting it.
+
+Docs: [getting started](https://circleci.com/docs/guides/test/getting-started-with-circleci-testing-tool/), [test impact analysis](https://circleci.com/docs/guides/test/set-up-test-impact-analysis/), [dynamic test splitting](https://circleci.com/docs/guides/test/use-dynamic-test-splitting/), [auto rerun](https://circleci.com/docs/guides/test/auto-rerun-failed-tests/), [config reference](https://circleci.com/docs/reference/testsuite-configuration-reference/).
+
+## What is in the repo
 
 | | Classic `classic-full-suite` | Smarter `smarter-testing` |
 | --- | --- | --- |
-| Tests | **9,716** cases in **212** files | Same suite |
-| Parallelism | **15** (fixed) | **2** |
-| Split | `circleci tests split --split-by=name` (not timings) | Dynamic test splitting + timing data |
-| Selection | Always the **full** suite. No TIA. | TIA on feature branches |
-| Jest | `--runInBand`, `DEMO_TEST_DELAY_MS=300` | `--maxWorkers=2`, `DEMO_TEST_DELAY_MS=15` |
+| Tests | **9,716** Jest cases in **212** files (`demo/src/<domain>/`) | Same suite |
+| Parallelism | **15** | **2** |
+| Split | `circleci tests split --split-by=name` | Dynamic test splitting (shared queue) |
+| Selection | Always the full suite | TIA on feature branches, full suite on `main` |
+| Retries | None | `max-auto-rerun: 1` |
+| Jest (default) | `--runInBand`, `DEMO_TEST_DELAY_MS=300` | `--maxWorkers=2`, `DEMO_TEST_DELAY_MS=15` |
 
-Smarter is **2-wide on purpose**: after TIA, only `quote.test.js` is selected. At 30-wide, 29 nodes sat idle and presenters kept opening a container that said “Ran 0 test atoms.” Two nodes still show a split and the compute savings vs classic’s 15.
+The default classic job is deliberately unoptimized. For an apples-to-apples comparison, the `vijay-2026-10-08-demo-like-for-like` branch gives classic the same Jest workers and per-test delay as smarter. Use those numbers when anyone asks "is that fair?".
 
-Layout: 12 independent e-commerce domains (`cart`, `catalog`, `checkout`, `coupons`, `inventory`, `payments`, `pricing`, `recommendations`, `shipping`, `tax`, `users`, `warehouse`). Later-alphabet domains have more tests per file, so a name-only split leaves **unbalanced shards** — that is a feature, not a bug.
+## Branches for this demo
 
-Linux Docker is the **timing showcase**. macOS is the same jobs on a different executor (see below).
+All branch off `vijay-2026-10-08-demo`. None of them touch `main`.
 
-## Before the room (do this once)
+| Branch | What it changes | What it shows |
+| --- | --- | --- |
+| `vijay-2026-10-08-demo` | Adds `scripts/demo/` helpers and this script | Baseline: classic 15-wide vs smarter 2-wide |
+| `vijay-2026-10-08-demo-tia-withholding` | One behaviour-preserving edit to `demo/src/tax/withholding.js` | TIA selects 1 of 212 test files |
+| `vijay-2026-10-08-demo-flaky-auto-rerun` | Adds `demo/src/payments/settlementCutoff.js` and a test that fails once per fresh container | Smarter auto-reruns it and goes green; classic goes red |
+| `vijay-2026-10-08-demo-like-for-like` | Classic uses `--maxWorkers=2` and a 15 ms delay, like smarter | Fair full-suite comparison: 15 nodes vs 2 |
 
-1. Install and log in to the [CircleCI CLI](https://cli.circleci.com/):
+Helpers:
+
+- `scripts/demo/tia-change.sh [module]`: creates `vijay-2026-10-08-demo-tia-<module>-<timestamp>` off the demo branch with a one-module refactor, commits and pushes it, and prints the pipeline URL. Default module: `demo/src/tax/withholding.js`. `NO_PUSH=1` commits without pushing.
+- `scripts/demo/collect-numbers.mjs`: wall clock, nodes, test counts and credits per workflow from CircleCI API v3 (`CIRCLE_TOKEN` required).
+
+## Real numbers (Linux Docker `medium`, 7-8 Oct 2026)
+
+| Scenario | Workflow | Nodes | Tests run | Wall clock | Credits |
+| --- | --- | --- | --- | --- | --- |
+| Classic default (unoptimized) | [pipeline 230](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/230/workflows/0d726aee-07e4-4e37-a63e-337f3a9a884b) | 15 | 9,716 | 3m 46s | 549 |
+| Classic like-for-like | [pipeline 233](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/233/workflows/7af6e6ab-4c12-4213-ba44-9f57eafc670e) | 15 | 9,716 | 38s | 71 |
+| Smarter, full suite (dynamic split) | [pipeline 233](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/233/workflows/4926a41b-976e-44a3-b002-a8d0c981441f) | 2 | 9,716 | 60s | 22 |
+| Smarter, one-module change (TIA) | [pipeline 236](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/236/workflows/a8931066-89d4-4da3-84b7-e5e8501f6eaf) | 2 | 52 (1 file, 211 skipped) | 18s | 7 |
+| Smarter, flaky test (TIA + auto rerun) | [pipeline 237](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/237/workflows/1749229f-2d04-44a3-ab6b-f213718c2710) | 2 | 8 (failed once, rerun passed) | 16s | 7 |
+| Classic, same flaky test | [pipeline 232](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting/232/workflows/9c08aefb-1f3a-48c9-8ed5-d8d6fb79a58b) | 15 | 9,724 (1 failed) | 3m 52s, red | 551 |
+
+Headline ratios: dynamic split runs the whole suite for **69% fewer credits** than the like-for-like 15-node split (22 vs 71), at the cost of about 22 seconds. TIA on a one-module change uses **90% fewer credits** than the like-for-like classic run (7 vs 71) and finishes in less than half the time. Wall clock is workflow created to ended, so it includes container spin-up.
+
+Re-collect any time:
+
+```bash
+CIRCLE_TOKEN=... node scripts/demo/collect-numbers.mjs --branch vijay-2026-10-08-demo-tia-withholding
+```
+
+## Before the room
+
+Do these the day before and again 30 minutes before.
+
+1. CLI logged in, testsuite extension installed:
 
    ```bash
-   circleci auth login
    circleci auth me
+   circleci extension install testsuite   # once
    ```
 
-2. Install the testsuite extension (not shipped with the CLI by default):
+2. Local repo on the demo branch with dependencies installed:
 
    ```bash
-   circleci extension install testsuite
+   git switch vijay-2026-10-08-demo && git pull
+   (cd demo && npm ci)
    ```
 
-3. Confirm the project is followed: [AwesomeCICD/awesomeci-test-splitting](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting).
+3. **Refresh impact data.** TIA needs current impact data in CircleCI. On 7 Oct the stored data had aged out and every feature branch fell back to "Selecting all test atoms, no impact analysis available". The fix that worked, from the repo root on the demo branch (about 2.5 minutes):
 
-4. **Test impact analysis needs impact data first.** The default branch (`main`) must complete a `smarter-testing` run so analysis can upload coverage. A brand-new project, or a first push of this config, will run the **full** smarter suite (and can look slower than classic because of coverage analysis) until that data exists.
+   ```bash
+   circleci testsuite run "demo tests" --run-tests=none --analyze-tests=impacted
+   ```
 
-5. Work from the repo root. `test-suites.yml` lives at `.circleci/test-suites.yml`. The demo path is the generated Jest suite under `demo/src/<domain>/`. Do not wire `react/` into these workflows.
+   It ends with `Updated test impact data`. Then confirm selection against CircleCI's data (no `--local`):
 
-## How to trigger pipelines
+   ```bash
+   git switch vijay-2026-10-08-demo-tia-withholding
+   circleci testsuite list-tests "demo tests"     # expect: demo/src/tax/withholding.test.js
+   git switch vijay-2026-10-08-demo
+   ```
 
-| What you want | How |
-| --- | --- |
-| Default (Linux, both workflows) | Push to `main`, or **Trigger Pipeline** with defaults |
-| Classic only | **Trigger Pipeline** → `run-classic: true`, `run-smarter: false` |
-| Smarter only | **Trigger Pipeline** → `run-classic: false`, `run-smarter: true` |
-| Same jobs on macOS | **Trigger Pipeline** → `run-macos: true` (Linux workflows are skipped) |
+4. **Pipelines must be push-triggered.** On this project, pipelines started from the API, the CLI (`circleci run trigger`) or "Trigger Pipeline" currently fail at checkout with `Permission denied (publickey)`. Push-triggered pipelines and workflow reruns are fine. If you need a fresh run on a helper branch, push an empty commit:
 
-Project slug if you need it: `gh/AwesomeCICD/awesomeci-test-splitting`.
+   ```bash
+   git switch vijay-2026-10-08-demo-tia-withholding
+   git commit --allow-empty -m "Start a fresh pipeline" && git push
+   ```
 
-## 0:00–1:00 — Setup and the contrast
+   Do not use "Rerun workflow" to show TIA. A rerun skips tests that already passed in that workflow ("Detected rerun, skipping previously successful test atoms"), which is the rerun-failed-tests feature, not TIA.
 
-**Clicks**
+5. Tabs, left to right:
+   1. Slides (title, problem, what you will see).
+   2. [Pipelines filtered to the demo branch](https://app.circleci.com/pipelines/github/AwesomeCICD/awesomeci-test-splitting?branch=vijay-2026-10-08-demo).
+   3. Classic baseline: pipeline 230 `classic-tests` job.
+   4. TIA: pipeline 236 `smarter-tests` job, Tests tab.
+   5. Like-for-like: pipeline 233 workflow map.
+   6. Flaky: pipeline 237 `smarter-tests` job (step output) and pipeline 232 classic (red).
+   7. Editor on `.circleci/test-suites.yml` and `demo/src/tax/withholding.js`.
+   8. Terminal at the repo root, font size up, `clear`ed.
 
-1. Open `.circleci/config.yml`. Point at `classic-full-suite` (parallelism **15**) vs `smarter-testing` (parallelism **2**).
-2. Open `.circleci/test-suites.yml`. Point at `test-impact-analysis`, `dynamic-test-splitting`, and `max-auto-rerun`. Classic does **not** use this file.
-3. Open `demo/src/pricing/quote.js`. That is the file you will edit for the TIA wow. Each module has its own test file so TIA can skip the other ~211 atoms.
+6. macOS: the `run-macos` parameter path cannot be shown right now because it needs a triggered pipeline (see step 4). Talk to it, do not demo it.
 
-**Say**
+## Run of show
 
-- This is a ~10k-test e-commerce suite, not six files. Classic CI still “just run everything.”
-- 15-wide and dumb still hurts: name split, no TIA, Jest single-threaded.
-- Smarter Testing is what you reach for when that suite would crush a release train. Parallelism **2** is enough to show a split and the savings vs 15 busy classic nodes — not 30 mostly idle containers.
+| Time | Segment | Screen |
+| --- | --- | --- |
+| 0:00-1:00 | Open: the problem | Slides |
+| 1:00-1:30 | What you will see | Slide |
+| 1:30-3:30 | Baseline: classic, 15 wide | CircleCI, pipeline 230 |
+| 3:30-5:30 | One config file, one command (kick off the live TIA push first) | Terminal, editor |
+| 5:30-8:30 | Test impact analysis | CircleCI, live branch or pipeline 236 |
+| 8:30-10:30 | Dynamic splitting, 2 nodes vs 15 | CircleCI, pipeline 233 |
+| 10:30-12:30 | Flaky test: auto rerun and rerun from failed | CircleCI, pipelines 237 and 232 |
+| 12:30-14:00 | Why it matters in a regulated shop | Slide |
+| 14:00-15:00 | Pilot plan and the ask | Slide |
+| +5 min | Q&A buffer | |
 
-## 1:00–3:00 — Classic workflow
+### 0:00-1:00 Open: the problem
 
-**Trigger** (if it is not already running from the `main` push): CircleCI UI → **Trigger Pipeline** → `run-classic: true`, `run-smarter: false`.
+**Show:** title slide, then the problem slide.
 
-**Clicks**
+**Say:**
 
-1. Open the `classic-full-suite` workflow → job `classic-tests` (15 parallel nodes).
-2. Open **Discover and run the full suite**. You should see ~212 `demo/src/**/*.test.js` files discovered, then a **name** split for this node.
-3. Compare two nodes: an early-alphabet shard (`cart` / `catalog`) vs a late one (`users` / `warehouse`). The late shard has more cases per file and finishes later.
-4. Open the **Tests** tab. The full suite ran.
+- "Every team here has a test suite that only grows. Today a one-line change still runs all of it."
+- "In this repo that is 212 test files, 9,716 tests, on 15 machines, every push. The usual answer is more parallelism, which buys speed by paying for every node on every run."
+- "I'll show the alternative live: run what the change touches, split the rest smartly, and keep the full suite where you need it for control."
 
-**Audience should notice**
+### 1:00-1:30 What you will see
 
-- Full suite, every time, regardless of what changed.
-- Expected Linux wall-clock: about **4–8 minutes** (slowest name-shard; warehouse is heavier on purpose).
-- This is the old pattern: `circleci tests glob` + `circleci tests split --split-by=name`. No timings, no TIA.
+**Show:** the five-step slide. Read the five lines, no more.
 
-## 3:00–6:00 — Smarter workflow
+### 1:30-3:30 Baseline: classic, 15 wide
 
-**Trigger:** **Trigger Pipeline** → `run-classic: false`, `run-smarter: true`.
+**Clicks:**
 
-### On `main` (first run / default-branch behavior)
+1. Pipelines tab, pipeline 230, `classic-full-suite`, job `classic-tests`. Point at the **15** parallel runs.
+2. Open node 0, step **Discover and run the full suite**: "Discovered 212 test files", then the name-based split for that node.
+3. Open a late-alphabet node (13 or 14, `users` / `warehouse`): heavier shard, finishes last.
+4. **Tests** tab: 9,716 passed.
 
-**Clicks**
+**Say:**
 
-1. Open `smarter-testing` → `smarter-tests` (2 parallel nodes).
-2. In **Run smarter tests**, look for selection / analysis output — not a raw `jest` glob.
-3. Open **Tests**. On `main`, Smarter Testing still **runs all tests** and **updates impact data**. That is expected. Duration may be *longer* than classic because analysis adds coverage instrumentation.
+- "This is the pattern most of us run today: glob every test, split by name, run them all."
+- "Look at the shard spread. The heaviest node sets the pace and the rest sit idle at the end."
+- "549 credits and almost four minutes. Nothing about this run knew that only one file changed."
 
-**Say**
+**Wow:** the full suite ran for a change that touched nothing in it.
 
-- Default branch = build the map of “which test covers which file.”
-- Feature branches = use that map to run only impacted tests.
-- The wow is **not** the first `main` run.
+### 3:30-5:30 One config file, one command
 
-### The TIA moment (feature branch — do this after `main` has impact data)
-
-1. Branch off `main`.
-2. Change **only** [`demo/src/pricing/quote.js`](demo/src/pricing/quote.js) — for example, tweak the `UNIT` comment or add a space you immediately revert, or change a comment on the TIA hook line. Do **not** edit `demo/src/testSupport/delay.js`, `package.json`, or `.circleci/*.yml` (`full-test-run-paths` forces a full run).
-3. Push. Open the new `smarter-testing` job.
-
-**Audience should notice**
-
-- Log line about **Selecting tests**.
-- Only `demo/src/pricing/quote.test.js` runs (**44** cases). The other ~211 test files skip.
-- **Tests** tab (job level): **44 passed**, rest skipped. That is the reliable “always a hit” view — do **not** assume every container ran tests.
-- One of the two nodes runs `quote.test.js`. The other **may still be idle** (“Ran 0 test atoms”). Open the **Tests** tab or the **busy** parallel index, not a random container.
-- Job is a **small fraction** of classic time. Aim: **under ~90 seconds** on Linux after checkout/npm cache (often much less).
-- **Timings** tab: 2 nodes share work (`dynamic-test-splitting: true`). After TIA that is one busy node vs classic’s 15 busy shards — that is the savings story.
-- `max-auto-rerun: 1` is configured; you will only see a rerun if a test atom fails.
-
-If you have no impact data yet, every test is treated as new and all of them run. Call that out; do not fake skipped tests.
-
-## 6:00–8:00 — CLI (real commands)
-
-Run these from the **repo root**. Do **not** pass `--local` when you want CircleCI’s stored impact graph. `--local` is a flag on `circleci testsuite` itself (not on `run` / `list-tests`) and uses a filesystem impact file instead.
-
-Glance (10 seconds):
+**First, kick off the live TIA change** so it is finished by 5:30:
 
 ```bash
-circleci testsuite --help
+scripts/demo/tia-change.sh
 ```
 
-What would Smarter Testing select right now (fetches CircleCI impact data):
+It creates and pushes `vijay-2026-10-08-demo-tia-withholding-<timestamp>` with a single edit to `demo/src/tax/withholding.js` and prints the pipeline URL. Want proof it is not canned? Pass another module, for example `scripts/demo/tia-change.sh demo/src/pricing/quote.js`. Then `git switch vijay-2026-10-08-demo` to get back.
+
+**Show:** `.circleci/test-suites.yml` in the editor.
+
+```yaml
+name: demo tests
+discover: demo/discover.sh
+run: ... demo/jest.sh --ci --maxWorkers=2 --runTestsByPath << test.atoms >>
+analysis: ... --coverage ... && cp /tmp/tia-coverage/lcov.info "<< outputs.lcov >>"
+options:
+  test-impact-analysis: true
+  dynamic-test-splitting: true
+  max-auto-rerun: 1
+  full-test-run-paths: [demo/package.json, demo/package-lock.json, demo/jest.config.cjs, demo/jest.sh, .circleci/*.yml]
+```
+
+**Say:**
+
+- "Four commands: how to find tests, how to run them, how to run them with coverage, where results go. The options switch each feature on independently."
+- "`full-test-run-paths` is the safety valve: change a dependency file or the CI config and everything runs."
+- "In the job, the whole test step becomes one line: `circleci testsuite run "demo tests"`."
+
+**Terminal (live, about 17 seconds):**
 
 ```bash
+circleci testsuite doctor "demo tests"
+```
+
+Point at the checks passing: discover found 212 atoms, run works, analysis maps tests to source files.
+
+Optional, if time (instant): what would CI select for the TIA branch?
+
+```bash
+git switch vijay-2026-10-08-demo-tia-withholding
 circleci testsuite list-tests "demo tests"
+git switch vijay-2026-10-08-demo
 ```
 
-Same selection, then actually run Jest locally:
+Expected: `demo/src/tax/withholding.test.js`, nothing else.
 
-```bash
-circleci testsuite run "demo tests"
-```
+**Wow:** `doctor` validates the whole setup in seconds, before anyone touches CI.
 
-Optional overrides (real flags): `--run-tests=all|impacted|none|default` and `--analyze-tests=all|impacted|none|default`.
+### 5:30-8:30 Test impact analysis
 
-Resource usage of a finished job. The argument is a **job UUID**, not a job number. Get it from `circleci workflow get` or `circleci run get --json`.
+**Clicks:**
 
-```bash
-circleci run list --project gh/AwesomeCICD/awesomeci-test-splitting --branch main
-circleci run get --project gh/AwesomeCICD/awesomeci-test-splitting --branch main --no-interactive
-circleci workflow get WORKFLOW_UUID
-circleci job resource-usage get JOB_UUID
-```
+1. Open the pipeline URL `tia-change.sh` printed. If it is not done, use pipeline 236 (same change).
+2. `smarter-testing` job `smarter-tests`, step **Run smarter tests**. Open the node that ran tests (the other can be idle). Read the selection block out loud:
 
-Example with a placeholder UUID (replace it):
+   ```text
+   Selecting tests...
+   Found test impact generated by: ...
+   - 1 test atoms impacted by modified files
+   Selected 1 test atoms, Skipped 211 test atoms
+   ```
 
-```bash
-circleci job resource-usage get 0dc4d8df-8f7e-41b0-a3ef-88066a5465c1
-```
+3. **Tests** tab: 52 passed, 9,664 skipped. The reason is visible, not a black box.
+4. Side by side: the `classic-full-suite` workflow on the same branch is still running all 9,716 tests on 15 nodes (about 4 minutes, about 550 credits).
 
-`--chart separate` splits parallel executions. `--json` is available if you want numbers instead of the chart.
+**Say:**
 
-**Audience should notice**
+- "We changed one tax module. Smarter Testing knew, from coverage on the default branch, that exactly one test file exercises it."
+- "52 tests instead of 9,716. 18 seconds and 7 credits against 71 credits for the like-for-like classic run, and 554 for the default classic run on this branch."
+- "Selection is conservative: new tests, tests that failed last time on this branch, and tests covering any changed or deleted file always run."
+- "And it is your rules: `full-test-run-paths` forces a full run, `test-selection-rules` pins tests that must always run, and the default branch runs everything while it refreshes the impact data."
 
-- `list-tests` is the same selector CI uses, against CircleCI impact data.
-- `resource-usage get` charts CPU and memory against the resource class limit. Classic’s 15 nodes stay busy; a TIA branch uses 2 nodes and one of them may sit idle.
+**Wow:** one file changed, one test file ran, and the log says why.
 
-### `--local` (mention only)
+### 8:30-10:30 Dynamic splitting, 2 nodes vs 15
 
-```bash
-circleci testsuite --local list-tests "demo tests"
-```
+**Clicks:**
 
-That reads locally stored impact data. Skip it when you are showing CircleCI’s graph.
+1. Pipeline 233 (like-for-like branch). Both workflows ran the full 9,716 tests with the same Jest settings.
+2. `classic-tests`: 15 nodes, 38s, 71 credits.
+3. `smarter-tests`: 2 nodes, 60s, 22 credits. **Timing** tab: both nodes pull from one queue and finish together.
 
-## 8:00–9:00 — macOS (mention)
+**Say:**
 
-Same demo jobs, macOS executor (`xcode: "26.6.0"`, `m4pro.medium`, Node already on the image). No PHP, no Docker-in-Docker.
+- "Same tests, same settings. Fifteen static shards finish in 38 seconds. Two nodes pulling from a shared queue finish in a minute for 69% fewer credits."
+- "That's the trade you get to choose. On the default branch, where the full suite runs, two well-balanced nodes may be all you need."
+- "Static timing-based splitting is free with `testsuite`. Dynamic splitting is the Smarter Testing upgrade that copes with slow or uneven nodes."
 
-**Trigger Pipeline** → set `run-macos` to `true`. Workflows become `classic-full-suite-macos` and `smarter-testing-macos`. Linux workflows do not run.
+**Wow:** a third of the compute for the same full suite.
 
-**macOS parallelism is 2** (classic Linux stays **15**; smarter Linux is also **2**). macOS VMs are the bottleneck and spinning many of them would be slow and expensive. Linux classic vs smarter is the timing/savings showcase; macos is “same jobs, different executor.”
+### 10:30-12:30 Flaky test: auto rerun and rerun from failed
 
-macOS VMs are slower to provision than `cimg/node`. Start this trigger only if you have time, or show a previous macOS run. Do not wait it out in a 5-minute slot.
+**Clicks:**
 
-## If something fails live
+1. Pipeline 237 (`vijay-2026-10-08-demo-flaky-auto-rerun`), `smarter-tests`, step **Run smarter tests**:
 
-| Symptom | Likely cause |
+   ```text
+   - 1 new test atoms
+   Selected 1 test atoms, Skipped 212 test atoms
+   ✕ reads the cutoff from a warm calendar cache
+   Rerunning failed tests...
+   Tests: 8 passed, 8 total
+   ```
+
+   Job green. The Tests tab still records the failed attempt.
+
+2. Pipeline 232 `classic-full-suite` on the same code: red, 3m 52s, 551 credits, for one flaky test.
+
+**Say:**
+
+- "This settlement-cutoff test fails the first time in a fresh container, like a cold cache timing out. Classic goes red and someone has to rerun 15 nodes."
+- "Smarter Testing retried only that one test, in the same job, and recorded the flake. It didn't hide it."
+- "Without auto rerun, 'Rerun workflow from failed' on a `testsuite` job reruns only the failed tests, not the whole suite. That part is free."
+- "`max-auto-rerun` and `auto-rerun-duration` cap how much retrying you allow, so flakes can't quietly eat the budget."
+
+**Wow:** a flaky failure turned green by retrying one test, with the evidence kept.
+
+### 12:30-14:00 Why it matters in a regulated shop
+
+**Show:** the value slide.
+
+**Say:**
+
+- "Controls stay where they are: the default branch runs every test, release branches can run `--run-tests=all`, and every selection, skip and retry is in the job log and Tests tab."
+- "Credits follow the change instead of the fan-out."
+- "Adoption is incremental: switch a suite to `circleci testsuite` for the free features, then turn on TIA for that one suite."
+
+### 14:00-15:00 Pilot plan and the ask
+
+**Show:** the pilot slide. One suite, four weeks: baseline, switch to `testsuite`, turn on TIA and dynamic splitting, measure. Ask for a candidate suite and an owner.
+
+## If something goes wrong live
+
+| Symptom | Likely cause and fallback |
 | --- | --- |
-| `circleci testsuite` not found locally | `circleci extension install testsuite` |
-| Container says “Ran 0 test atoms” | Expected on the idle smarter node. Open the job **Tests** tab (44 passed / rest skipped) or the busy parallel index |
-| All tests run on a feature branch | No impact data on `main` yet, or you changed `full-test-run-paths` (`.circleci/*.yml`, `demo/package.json`, `demo/jest.config.cjs`, `demo/jest.sh`) |
-| Smarter job longer than classic on `main` | Analysis is doing its job; compare a later feature branch that edits only `demo/src/pricing/quote.js` |
-| `resource-usage` errors | Job still running, or you passed a workflow ID / job number instead of the job UUID |
-| macOS queue / long classic macos | Expected (parallelism 2 + VM provision). Do not use macos for the timing wow |
+| TIA branch runs all 212 files, log says "no impact analysis available" | Impact data is missing or aged out. Show pipeline 236 instead. Afterwards, rerun the refresh command in "Before the room". |
+| All tests selected with a reason under "full test run paths" | The change touched `.circleci/*.yml` or a `demo/` dependency or Jest file. Expected. Use a source-only change. |
+| Live pipeline still queued at 5:30 | Show pipeline 236 and come back to the live one at the end. |
+| `circleci testsuite` not found | `circleci extension install testsuite` |
+| A node says "Ran 0 test atoms" | Expected on the idle node after TIA. Open the other node or the job Tests tab. |
+| Trigger Pipeline / `circleci run trigger` fails at checkout | Known project issue (checkout key for triggered pipelines). Push a commit instead. |
+| A rerun shows 0 tests selected | Rerun skips tests that already passed in that workflow. Use a fresh push for TIA. |
+
+## Reference: pipeline parameters
+
+| Parameter | Default | Effect |
+| --- | --- | --- |
+| `run-classic` | `true` | Run `classic-full-suite` |
+| `run-smarter` | `true` | Run `smarter-testing` |
+| `run-macos` | `false` | Run the same jobs on macOS (`xcode: 26.6.0`, `m4pro.medium`, parallelism 2) instead of Linux |
+
+Parameters only apply to triggered pipelines, which currently fail at checkout on this project (see "Before the room").
