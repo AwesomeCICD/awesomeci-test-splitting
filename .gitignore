@@ -71,6 +71,11 @@ Thumbs.db
 # CircleCI local cache and test results
 .circleci/cache/
 .circleci/test-results/
+# circleci testsuite local state and --local impact data
+.circleci/state-*.json
+.circleci/state-*/
+.circleci/impact-*.json
+test-reports/
 
 # chunk active sidecar tracking
 .chunk/sidecar.json
