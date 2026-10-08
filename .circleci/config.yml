@@ -10,12 +10,22 @@ parameters:
   run-smarter:
     type: boolean
     default: true
+  run-runner:
+    type: boolean
+    default: false
 
 executors:
   linux-node:
     docker:
       - image: cimg/node:24.11.0
     resource_class: medium
+    environment:
+      CI: "true"
+  # Same image as linux-node, on self-hosted container runner (FE-2429).
+  linux-node-runner:
+    docker:
+      - image: cimg/node:24.11.0
+    resource_class: awesomecicd/smarter-testing-container-runner
     environment:
       CI: "true"
   macos-node:
@@ -144,6 +154,7 @@ workflows:
       and:
         - equal: [true, << pipeline.parameters.run-classic >>]
         - equal: [false, << pipeline.parameters.run-macos >>]
+        - equal: [false, << pipeline.parameters.run-runner >>]
     jobs:
       - classic-tests:
           name: classic-tests
@@ -155,6 +166,7 @@ workflows:
       and:
         - equal: [true, << pipeline.parameters.run-smarter >>]
         - equal: [false, << pipeline.parameters.run-macos >>]
+        - equal: [false, << pipeline.parameters.run-runner >>]
     jobs:
       - smarter-tests:
           name: smarter-tests
@@ -183,4 +195,29 @@ workflows:
       - smarter-tests:
           name: smarter-tests-macos
           os: macos-node
+          parallelism: 2
+
+  # Self-hosted container runner (FE-2429): same jobs, same image, so any
+  # difference from the cloud runs is down to the runner. Parallelism 2 keeps
+  # the classic job from flooding a small cluster.
+  classic-full-suite-runner:
+    when:
+      and:
+        - equal: [true, << pipeline.parameters.run-classic >>]
+        - equal: [true, << pipeline.parameters.run-runner >>]
+    jobs:
+      - classic-tests:
+          name: classic-tests-runner
+          os: linux-node-runner
+          parallelism: 2
+
+  smarter-testing-runner:
+    when:
+      and:
+        - equal: [true, << pipeline.parameters.run-smarter >>]
+        - equal: [true, << pipeline.parameters.run-runner >>]
+    jobs:
+      - smarter-tests:
+          name: smarter-tests-runner
+          os: linux-node-runner
           parallelism: 2
