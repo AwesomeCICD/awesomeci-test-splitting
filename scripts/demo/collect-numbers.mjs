@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // Summarise demo runs (duration, parallelism, tests, credits) from CircleCI API v3.
+// Duration is the job duration the CircleCI job page shows (job started_at to
+// ended_at). Workflow wall clock adds queueing and is reported separately.
 //
 //   CIRCLE_TOKEN=... node scripts/demo/collect-numbers.mjs <run-id> [<run-id> ...]
 //   CIRCLE_TOKEN=... node scripts/demo/collect-numbers.mjs --branch vijay-2026-10-08-demo
@@ -97,7 +99,7 @@ async function credits(workflow) {
   }
 }
 
-async function jobSummary(jobId) {
+async function jobSummary(jobId, jobNumber, workflowUrl) {
   const job = (await api(`/jobs/${jobId}`)).data.attributes;
   const executions = job.parallel_executions ?? [];
   const testStepSeconds = executions.map((exec) => {
@@ -115,6 +117,8 @@ async function jobSummary(jobId) {
   const known = testStepSeconds.filter((s) => s != null);
   return {
     name: job.name,
+    number: jobNumber,
+    url: `${workflowUrl}/jobs/${jobNumber}`,
     outcome: job.outcome,
     duration_s: seconds(job.started_at, job.ended_at),
     parallelism: executions.length,
@@ -148,13 +152,14 @@ for (const runId of runIds) {
       ended_at: wf.attributes.ended_at,
     };
     const jobs = (await api(`/jobs?filter[workflow_id]=${wf.id}`)).data;
+    const url = `${APP_URL}/${entry.number}/workflows/${wf.id}`;
     entry.workflows.push({
       name: w.name,
       outcome: w.outcome,
-      duration_s: seconds(w.created_at, w.ended_at),
+      wall_clock_s: seconds(w.created_at, w.ended_at),
       credits: w.ended_at ? await credits(w) : null,
-      url: `${APP_URL}/${entry.number}/workflows/${wf.id}`,
-      jobs: await Promise.all(jobs.map((j) => jobSummary(j.id))),
+      url,
+      jobs: await Promise.all(jobs.map((j) => jobSummary(j.id, j.attributes.number, url))),
     });
   }
   report.push(entry);
@@ -167,14 +172,14 @@ if (asJson) {
 
 for (const r of report) {
   console.log(`\n## Run ${r.number} on ${r.branch} @ ${r.revision} — ${r.subject}`);
-  console.log("| Workflow | Outcome | Wall clock | Nodes | Test step per node | Tests | Files | Credits |");
-  console.log("| --- | --- | --- | --- | --- | --- | --- | --- |");
+  console.log("| Workflow | Job | Outcome | Job duration | Workflow wall clock | Nodes | Test step per node | Tests | Files | Credits |");
+  console.log("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const w of r.workflows) {
     for (const j of w.jobs) {
       const step = j.test_step_s.min == null ? "-" : `${fmt(j.test_step_s.min)} to ${fmt(j.test_step_s.max)}`;
       const results = Object.entries(j.results).map(([k, v]) => `${v} ${k}`).join(", ") || "0";
       console.log(
-        `| [${w.name}](${w.url}) | ${w.outcome} | ${fmt(w.duration_s)} | ${j.parallelism} | ${step} | ${results} | ${j.test_files} | ${w.credits ?? "-"} |`,
+        `| [${w.name}](${w.url}) | [${j.name}](${j.url}) | ${j.outcome ?? w.outcome} | ${fmt(j.duration_s)} | ${fmt(w.wall_clock_s)} | ${j.parallelism} | ${step} | ${results} | ${j.test_files} | ${w.credits ?? "-"} |`,
       );
     }
   }

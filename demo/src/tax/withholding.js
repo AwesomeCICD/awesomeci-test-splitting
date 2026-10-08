@@ -9,8 +9,7 @@ function withholding(amount, factor) {
 }
 
 function withholdingWithFee(amount, factor, fee) {
-  const base = withholding(amount, factor);
-  return base + fee;
+  return withholding(amount, factor) + fee;
 }
 
 function clampWithholding(value, min, max) {

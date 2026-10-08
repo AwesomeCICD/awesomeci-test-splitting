@@ -83,9 +83,10 @@ commands:
             circleci extension install testsuite
 
 jobs:
-  # Deliberately unoptimized: always the full suite, 15-wide, split by name
-  # (not timings), Jest --runInBand, and a per-test delay. Unbalanced shards
-  # are the point — later-alphabet domains (users, warehouse) are heavier.
+  # The pattern most pipelines start from: always the full suite, 15-wide, split
+  # by name with circleci tests split. Same Jest workers and per-test delay as
+  # smarter-tests, so the differences are parallelism, split strategy and test
+  # selection, not test speed.
   classic-tests:
     parameters:
       os:
@@ -97,7 +98,7 @@ jobs:
     executor: << parameters.os >>
     parallelism: << parameters.parallelism >>
     environment:
-      DEMO_TEST_DELAY_MS: "300"
+      DEMO_TEST_DELAY_MS: "15"
     steps:
       - install-demo
       - run:
@@ -108,12 +109,12 @@ jobs:
             echo "Split by name only (circleci tests split --split-by=name). Parallelism ${CIRCLE_NODE_TOTAL}."
             TEST_FILES=$(circleci tests glob "demo/src/**/*.test.js")
             echo "Discovered $(printf '%s\n' "${TEST_FILES}" | sed '/^$/d' | wc -l | tr -d ' ') test files."
-            # Naive split — do not use --split-by=timings. Uneven shards are expected.
+            # Split by name, not timings, as most existing pipelines do.
             SPLIT_FILES=$(printf '%s\n' "${TEST_FILES}" | circleci tests split --split-by=name)
             echo "This node (index ${CIRCLE_NODE_INDEX}) will run:"
             printf '%s\n' "${SPLIT_FILES}"
             JEST_JUNIT_OUTPUT_FILE="test-reports/junit.xml" \
-              demo/jest.sh --ci --runInBand --runTestsByPath ${SPLIT_FILES}
+              demo/jest.sh --ci --maxWorkers=2 --runTestsByPath ${SPLIT_FILES}
       - store_test_results:
           path: test-reports
       - store_artifacts:
