@@ -15,3 +15,40 @@ options:
     - demo/jest.config.cjs
     - demo/jest.sh
     - .circleci/*.yml
+---
+# Kotlin/JVM unit tests (JUnit 4 via Gradle). Coverage comes from JaCoCo,
+# converted to LCOV by android/scripts/jacoco-to-lcov.sh.
+name: android unit tests
+discover: find android/src/test -name '*Test.kt' | sort
+run: android/scripts/run-tests.sh "<< outputs.junit >>" << test.atoms >>
+analysis: android/scripts/analyze.sh << test.atoms >> "<< outputs.lcov >>"
+outputs:
+  junit: test-reports/android/junit.xml
+options:
+  impact-key: android-unit-tests
+  test-impact-analysis: true
+  dynamic-test-splitting: true
+  max-auto-rerun: 1
+  full-test-run-paths:
+    - android/*.gradle.kts
+    - android/gradle.properties
+    - android/scripts/*.sh
+    - .circleci/*.yml
+---
+# Swift package tests (XCTest via swift test) on macOS. Coverage comes from
+# llvm-cov, which exports LCOV directly.
+name: ios unit tests
+discover: find ios/Tests -name '*Tests.swift' | sort
+run: ios/scripts/run-tests.sh "<< outputs.junit >>" << test.atoms >>
+analysis: ios/scripts/analyze.sh << test.atoms >> "<< outputs.lcov >>"
+outputs:
+  junit: test-reports/ios/junit.xml
+options:
+  impact-key: ios-unit-tests
+  test-impact-analysis: true
+  dynamic-test-splitting: true
+  max-auto-rerun: 1
+  full-test-run-paths:
+    - ios/Package.swift
+    - ios/scripts/*.sh
+    - .circleci/*.yml

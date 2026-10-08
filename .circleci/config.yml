@@ -1,13 +1,16 @@
 version: 2.1
 
 parameters:
-  run-macos:
-    type: boolean
-    default: false
   run-classic:
     type: boolean
     default: true
   run-smarter:
+    type: boolean
+    default: true
+  run-android:
+    type: boolean
+    default: true
+  run-ios:
     type: boolean
     default: true
 
@@ -18,9 +21,15 @@ executors:
     resource_class: medium
     environment:
       CI: "true"
-  macos-node:
+  android:
+    docker:
+      - image: cimg/android:2026.08.1
+    resource_class: medium
+    environment:
+      CI: "true"
+  macos:
     macos:
-      xcode: "26.6.0"
+      xcode: 27.0.0
     resource_class: m4pro.medium
     environment:
       CI: "true"
@@ -110,9 +119,9 @@ jobs:
       - store_artifacts:
           path: test-reports
 
-  # Optimized to win: TIA + dynamic split on 2 nodes (enough to show a
-  # split without 29 idle containers), Jest workers, short per-test delay.
-  # Feature-branch wow is one module vs classic's 15-wide full suite.
+  # TIA + dynamic split on 2 nodes (enough to show a split without idle
+  # containers), Jest workers, short per-test delay. On a feature branch it runs
+  # only the impacted test files; classic always runs all of them 15-wide.
   smarter-tests:
     parameters:
       os:
@@ -138,12 +147,60 @@ jobs:
       - store_artifacts:
           path: test-reports
 
+  # main is frozen for this demo, so vijay-2026-10-08-demo plays the default
+  # branch for the mobile suites: it refreshes their impact data, and every
+  # other branch only selects. Same pattern as the docs' "develop" example.
+  android-tests:
+    executor: android
+    parallelism: 2
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - android-gradle-v1-{{ checksum "android/build.gradle.kts" }}
+            - android-gradle-v1-
+      - run:
+          name: Compile the module and tests
+          command: gradle -p android --daemon --console=plain testClasses
+      - save_cache:
+          key: android-gradle-v1-{{ checksum "android/build.gradle.kts" }}
+          paths:
+            - ~/.gradle/caches
+      - ensure-testsuite
+      - run:
+          name: Run Android unit tests
+          command: |
+            mkdir -p test-reports
+            circleci testsuite run "android unit tests" \
+              --analyze-tests=<< pipeline.git.branch == "vijay-2026-10-08-demo" and "impacted" or "none" >>
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
+
+  ios-tests:
+    executor: macos
+    parallelism: 2
+    steps:
+      - checkout
+      - run:
+          name: Build the Swift package and tests
+          command: swift build --package-path ios --build-tests
+      - ensure-testsuite
+      - run:
+          name: Run iOS unit tests
+          command: |
+            mkdir -p test-reports
+            circleci testsuite run "ios unit tests" \
+              --analyze-tests=<< pipeline.git.branch == "vijay-2026-10-08-demo" and "impacted" or "none" >>
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
+
 workflows:
   classic-full-suite:
-    when:
-      and:
-        - equal: [true, << pipeline.parameters.run-classic >>]
-        - equal: [false, << pipeline.parameters.run-macos >>]
+    when: << pipeline.parameters.run-classic >>
     jobs:
       - classic-tests:
           name: classic-tests
@@ -151,36 +208,19 @@ workflows:
           parallelism: 15
 
   smarter-testing:
-    when:
-      and:
-        - equal: [true, << pipeline.parameters.run-smarter >>]
-        - equal: [false, << pipeline.parameters.run-macos >>]
+    when: << pipeline.parameters.run-smarter >>
     jobs:
       - smarter-tests:
           name: smarter-tests
           os: linux-node
           parallelism: 2
 
-  # macOS is the same jobs on a different executor — not the timing showcase.
-  # Parallelism is 2 so we do not spin 15 macOS VMs. Linux classic is the contrast.
-  classic-full-suite-macos:
-    when:
-      and:
-        - equal: [true, << pipeline.parameters.run-classic >>]
-        - equal: [true, << pipeline.parameters.run-macos >>]
+  android-smarter-testing:
+    when: << pipeline.parameters.run-android >>
     jobs:
-      - classic-tests:
-          name: classic-tests-macos
-          os: macos-node
-          parallelism: 2
+      - android-tests
 
-  smarter-testing-macos:
-    when:
-      and:
-        - equal: [true, << pipeline.parameters.run-smarter >>]
-        - equal: [true, << pipeline.parameters.run-macos >>]
+  ios-smarter-testing:
+    when: << pipeline.parameters.run-ios >>
     jobs:
-      - smarter-tests:
-          name: smarter-tests-macos
-          os: macos-node
-          parallelism: 2
+      - ios-tests
