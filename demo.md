@@ -9,12 +9,12 @@ Smarter Testing is in **beta**. The org must be on CircleCI cloud. There is no e
 | | Classic `classic-full-suite` | Smarter `smarter-testing` |
 | --- | --- | --- |
 | Tests | **9,716** cases in **212** files | Same suite |
-| Parallelism | **15** (fixed) | **2** |
+| Parallelism | **15** (fixed) | **Dynamic**, 1–15 (sized from the TIA selection) |
 | Split | `circleci tests split --split-by=name` (not timings) | Dynamic test splitting + timing data |
 | Selection | Always the **full** suite. No TIA. | TIA on feature branches |
 | Jest | `--runInBand`, `DEMO_TEST_DELAY_MS=300` | `--maxWorkers=2`, `DEMO_TEST_DELAY_MS=15` |
 
-Smarter is **2-wide on purpose**: after TIA, only `quote.test.js` is selected. At 30-wide, 29 nodes sat idle and presenters kept opening a container that said “Ran 0 test atoms.” Two nodes still show a split and the compute savings vs classic’s 15.
+Smarter uses **dynamic parallelism**: an upstream `smarter-list-tests` job runs `circleci testsuite list-tests "demo tests" --key=...` (TIA selection, no tests run), and CircleCI sizes `smarter-tests` from the selected atoms' timings via the `experimental.dynamic-parallelism` stanza (`min: 1`, `max: 15`). Full suite on `main` → 15 nodes, same as classic. A feature branch that only touches `quote.js` → **1 node**, no idle containers. Docs: [Set parallelism dynamically](https://circleci.com/docs/guides/test/set-parallelism-dynamically/). The feature is experimental; the stanza syntax will change.
 
 Layout: 12 independent e-commerce domains (`cart`, `catalog`, `checkout`, `coupons`, `inventory`, `payments`, `pricing`, `recommendations`, `shipping`, `tax`, `users`, `warehouse`). Later-alphabet domains have more tests per file, so a name-only split leaves **unbalanced shards** — that is a feature, not a bug.
 
@@ -56,7 +56,7 @@ Project slug if you need it: `gh/AwesomeCICD/awesomeci-test-splitting`.
 
 **Clicks**
 
-1. Open `.circleci/config.yml`. Point at `classic-full-suite` (parallelism **15**) vs `smarter-testing` (parallelism **2**).
+1. Open `.circleci/config.yml`. Point at `classic-full-suite` (parallelism **15**, fixed) vs `smarter-testing` (`smarter-list-tests` → `smarter-tests`), and the `experimental.dynamic-parallelism` stanza at the bottom (`min: 1`, `max: 15`).
 2. Open `.circleci/test-suites.yml`. Point at `test-impact-analysis`, `dynamic-test-splitting`, and `max-auto-rerun`. Classic does **not** use this file.
 3. Open `demo/src/pricing/quote.js`. That is the file you will edit for the TIA wow. Each module has its own test file so TIA can skip the other ~211 atoms.
 
@@ -64,7 +64,7 @@ Project slug if you need it: `gh/AwesomeCICD/awesomeci-test-splitting`.
 
 - This is a ~10k-test e-commerce suite, not six files. Classic CI still “just run everything.”
 - 15-wide and dumb still hurts: name split, no TIA, Jest single-threaded.
-- Smarter Testing is what you reach for when that suite would crush a release train. Parallelism **2** is enough to show a split and the savings vs 15 busy classic nodes — not 30 mostly idle containers.
+- Smarter Testing is what you reach for when that suite would crush a release train. You don’t pick a parallelism number: Smarter Testing sizes the job from what it’s actually going to run.
 
 ## 1:00–3:00 — Classic workflow
 
@@ -91,7 +91,7 @@ Project slug if you need it: `gh/AwesomeCICD/awesomeci-test-splitting`.
 
 **Clicks**
 
-1. Open `smarter-testing` → `smarter-tests` (2 parallel nodes).
+1. Open `smarter-testing`. First `smarter-list-tests` runs (one node, lists the selection). Then `smarter-tests` starts with up to **15** parallel nodes — on `main` it’s the full suite, so expect `max`. **Parallel runs** on the Steps tab shows the count.
 2. In **Run smarter tests**, look for selection / analysis output — not a raw `jest` glob.
 3. Open **Tests**. On `main`, Smarter Testing still **runs all tests** and **updates impact data**. That is expected. Duration may be *longer* than classic because analysis adds coverage instrumentation.
 
@@ -112,9 +112,9 @@ Project slug if you need it: `gh/AwesomeCICD/awesomeci-test-splitting`.
 - Log line about **Selecting tests**.
 - Only `demo/src/pricing/quote.test.js` runs (**44** cases). The other ~211 test files skip.
 - **Tests** tab (job level): **44 passed**, rest skipped. That is the reliable “always a hit” view — do **not** assume every container ran tests.
-- One of the two nodes runs `quote.test.js`. The other **may still be idle** (“Ran 0 test atoms”). Open the **Tests** tab or the **busy** parallel index, not a random container.
+- `smarter-list-tests` shows the single selected atom. `smarter-tests` then starts with **1** parallel node (vs 15 on `main`) — check **Parallel runs** on the Steps tab and the `Dynamic parallelism picked 1 node(s)` log line. No idle containers.
 - Job is a **small fraction** of classic time. Aim: **under ~90 seconds** on Linux after checkout/npm cache (often much less).
-- **Timings** tab: 2 nodes share work (`dynamic-test-splitting: true`). After TIA that is one busy node vs classic’s 15 busy shards — that is the savings story.
+- Same config, same `max: 15`: the full suite got 15 nodes, this branch got 1. That is the savings story — parallelism follows the selected work instead of a hard-coded number.
 - `max-auto-rerun: 1` is configured; you will only see a rerun if a test atom fails.
 
 If you have no impact data yet, every test is treated as new and all of them run. Call that out; do not fake skipped tests.
@@ -163,7 +163,8 @@ circleci job resource-usage get 0dc4d8df-8f7e-41b0-a3ef-88066a5465c1
 **Audience should notice**
 
 - `list-tests` is the same selector CI uses, against CircleCI impact data.
-- `resource-usage get` charts CPU and memory against the resource class limit. Classic’s 15 nodes stay busy; a TIA branch uses 2 nodes and one of them may sit idle.
+- `resource-usage get` charts CPU and memory against the resource class limit. Classic’s 15 nodes stay busy; a TIA branch uses 1 node.
+- `list-tests --key=...` is the same command CI runs upstream to size `smarter-tests`. Locally you can omit `--key`.
 
 ### `--local` (mention only)
 
@@ -179,7 +180,7 @@ Same demo jobs, macOS executor (`xcode: "26.6.0"`, `m4pro.medium`, Node already 
 
 **Trigger Pipeline** → set `run-macos` to `true`. Workflows become `classic-full-suite-macos` and `smarter-testing-macos`. Linux workflows do not run.
 
-**macOS parallelism is 2** (classic Linux stays **15**; smarter Linux is also **2**). macOS VMs are the bottleneck and spinning many of them would be slow and expensive. Linux classic vs smarter is the timing/savings showcase; macos is “same jobs, different executor.”
+**macOS parallelism is capped at 2** (classic Linux stays **15**; smarter Linux is dynamic 1–15, smarter macOS is dynamic 1–2). macOS VMs are the bottleneck and spinning many of them would be slow and expensive. Linux classic vs smarter is the timing/savings showcase; macos is “same jobs, different executor.”
 
 macOS VMs are slower to provision than `cimg/node`. Start this trigger only if you have time, or show a previous macOS run. Do not wait it out in a 5-minute slot.
 
@@ -188,8 +189,9 @@ macOS VMs are slower to provision than `cimg/node`. Start this trigger only if y
 | Symptom | Likely cause |
 | --- | --- |
 | `circleci testsuite` not found locally | `circleci extension install testsuite` |
-| Container says “Ran 0 test atoms” | Expected on the idle smarter node. Open the job **Tests** tab (44 passed / rest skipped) or the busy parallel index |
+| `smarter-tests` ran 15 nodes on a feature branch | TIA selected the full suite (no impact data, or a `full-test-run-paths` change), or there are no timings yet — run the suite once on `main` first |
+| `smarter-tests` ignored dynamic parallelism and used its config `parallelism` | `list-tests` failed or `--key` doesn’t match the stanza `key`; this is the documented fallback |
 | All tests run on a feature branch | No impact data on `main` yet, or you changed `full-test-run-paths` (`.circleci/*.yml`, `demo/package.json`, `demo/jest.config.cjs`, `demo/jest.sh`) |
 | Smarter job longer than classic on `main` | Analysis is doing its job; compare a later feature branch that edits only `demo/src/pricing/quote.js` |
 | `resource-usage` errors | Job still running, or you passed a workflow ID / job number instead of the job UUID |
-| macOS queue / long classic macos | Expected (parallelism 2 + VM provision). Do not use macos for the timing wow |
+| macOS queue / long classic macos | Expected (max parallelism 2 + VM provision). Do not use macos for the timing wow |

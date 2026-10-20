@@ -73,6 +73,21 @@ commands:
             curl -fLSs https://cli.circleci.com/install | bash
             circleci extension install testsuite
 
+  run-smarter-tests:
+    steps:
+      - install-demo
+      - ensure-testsuite
+      - run:
+          name: Run smarter tests
+          command: |
+            mkdir -p test-reports
+            echo "Dynamic parallelism picked ${CIRCLE_NODE_TOTAL} node(s) for this run."
+            circleci testsuite run "demo tests"
+      - store_test_results:
+          path: test-reports
+      - store_artifacts:
+          path: test-reports
+
 jobs:
   # Deliberately unoptimized: always the full suite, 15-wide, split by name
   # (not timings), Jest --runInBand, and a per-test delay. Unbalanced shards
@@ -110,33 +125,46 @@ jobs:
       - store_artifacts:
           path: test-reports
 
-  # Optimized to win: TIA + dynamic split on 2 nodes (enough to show a
-  # split without 29 idle containers), Jest workers, short per-test delay.
-  # Feature-branch wow is one module vs classic's 15-wide full suite.
-  smarter-tests:
+  # Upstream half of dynamic parallelism: runs the suite's discover + TIA
+  # selection without running tests, and publishes the selection under
+  # `key` so CircleCI can size the downstream test job's parallelism.
+  smarter-list-tests:
     parameters:
       os:
         type: executor
         default: linux-node
-      parallelism:
-        type: integer
-        default: 2
+      key:
+        type: string
     executor: << parameters.os >>
-    parallelism: << parameters.parallelism >>
-    environment:
-      DEMO_TEST_DELAY_MS: "15"
     steps:
       - install-demo
       - ensure-testsuite
       - run:
-          name: Run smarter tests
-          command: |
-            mkdir -p test-reports
-            circleci testsuite run "demo tests"
-      - store_test_results:
-          path: test-reports
-      - store_artifacts:
-          path: test-reports
+          name: List selected test atoms
+          command: circleci testsuite list-tests "demo tests" --key=<< parameters.key >>
+
+  # Optimized to win: TIA + dynamic split + dynamic parallelism, Jest
+  # workers, short per-test delay. `parallelism` is only the fallback (and
+  # full-suite ceiling); the real node count comes from the
+  # experimental.dynamic-parallelism stanza below. Feature-branch wow is one
+  # module on one node vs classic's 15-wide full suite.
+  smarter-tests:
+    executor: linux-node
+    parallelism: 15
+    environment:
+      DEMO_TEST_DELAY_MS: "15"
+    steps:
+      - run-smarter-tests
+
+  # Separate job (not a parameterized smarter-tests) so the
+  # dynamic-parallelism stanza can key on an unambiguous job name.
+  smarter-tests-macos:
+    executor: macos-node
+    parallelism: 2
+    environment:
+      DEMO_TEST_DELAY_MS: "15"
+    steps:
+      - run-smarter-tests
 
 workflows:
   classic-full-suite:
@@ -156,13 +184,16 @@ workflows:
         - equal: [true, << pipeline.parameters.run-smarter >>]
         - equal: [false, << pipeline.parameters.run-macos >>]
     jobs:
-      - smarter-tests:
-          name: smarter-tests
+      - smarter-list-tests:
+          name: smarter-list-tests
           os: linux-node
-          parallelism: 2
+          key: demo-tests-linux-parallelism
+      - smarter-tests:
+          requires:
+            - smarter-list-tests
 
   # macOS is the same jobs on a different executor — not the timing showcase.
-  # Parallelism is 2 so we do not spin 15 macOS VMs. Linux classic is the contrast.
+  # Parallelism is capped at 2 so we do not spin 15 macOS VMs. Linux classic is the contrast.
   classic-full-suite-macos:
     when:
       and:
@@ -180,7 +211,27 @@ workflows:
         - equal: [true, << pipeline.parameters.run-smarter >>]
         - equal: [true, << pipeline.parameters.run-macos >>]
     jobs:
-      - smarter-tests:
-          name: smarter-tests-macos
+      - smarter-list-tests:
+          name: smarter-list-tests-macos
           os: macos-node
-          parallelism: 2
+          key: demo-tests-macos-parallelism
+      - smarter-tests-macos:
+          requires:
+            - smarter-list-tests-macos
+
+# Dynamic parallelism (Smarter Testing, experimental syntax — will change).
+# Each key is a test job name; `key` must match the --key passed to
+# `circleci testsuite list-tests` in the upstream job. With no `target`,
+# CircleCI scales `max` by the share of the suite TIA selected: the full
+# suite on main gets `max`, a one-module feature branch drops to `min`.
+# https://circleci.com/docs/guides/test/set-parallelism-dynamically/
+experimental:
+  dynamic-parallelism:
+    smarter-tests:
+      key: demo-tests-linux-parallelism
+      min: 1
+      max: 15
+    smarter-tests-macos:
+      key: demo-tests-macos-parallelism
+      min: 1
+      max: 2
