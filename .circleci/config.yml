@@ -10,6 +10,12 @@ parameters:
   run-smarter:
     type: boolean
     default: true
+  # Set to "all" to rebuild the TIA impact map from scratch (coverage on
+  # every test atom). Leave at "default" for normal runs.
+  analyze-tests:
+    type: enum
+    enum: [default, all]
+    default: default
 
 executors:
   linux-node:
@@ -82,7 +88,7 @@ commands:
           command: |
             mkdir -p test-reports
             echo "Dynamic parallelism picked ${CIRCLE_NODE_TOTAL} node(s) for this run."
-            circleci testsuite run "demo tests"
+            circleci testsuite run "demo tests" --analyze-tests=<< pipeline.parameters.analyze-tests >>
       - store_test_results:
           path: test-reports
       - store_artifacts:
