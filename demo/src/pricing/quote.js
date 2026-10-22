@@ -3,7 +3,7 @@
 "use strict";
 
 const UNIT = 2;
-const FACTOR_BASE = 134;
+const FACTOR_BASE = 134; 
 
 function quote(amount, factor) {
   return Math.round((amount * factor + UNIT) * 100) / 100;
