@@ -20,7 +20,9 @@ parameters:
 executors:
   linux-node:
     docker:
-      - image: cimg/node:24.11.0
+      # Exact tag from the org's approved_language_images policy
+      # (AwesomeCICD/circleci-policies). Other tags are rejected.
+      - image: cimg/node:24.22.1
     resource_class: medium
     environment:
       CI: "true"
