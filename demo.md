@@ -12,7 +12,7 @@ Smarter Testing is in **beta**. The org must be on CircleCI cloud. There is no e
 | Parallelism | **15** (fixed) | **Dynamic**, 1–15 (sized from the TIA selection) |
 | Split | `circleci tests split --split-by=name` (not timings) | Dynamic test splitting + timing data |
 | Selection | Always the **full** suite. No TIA. | TIA on feature branches |
-| Jest | `--runInBand`, `DEMO_TEST_DELAY_MS=300` | `--maxWorkers=2`, `DEMO_TEST_DELAY_MS=15` |
+| Jest | `--maxWorkers=2`, `DEMO_TEST_DELAY_MS=300` | Same (identical per-test cost) |
 
 Smarter uses **dynamic parallelism**: an upstream `smarter-list-tests` job runs `circleci testsuite list-tests "demo tests" --key=...` (TIA selection, no tests run), and CircleCI sizes `smarter-tests` from the selected atoms' timings via the `experimental.dynamic-parallelism` stanza (`min: 1`, `max: 15`). Full suite on `main` → 15 nodes, same as classic. A feature branch that only touches `quote.js` → **1 node**, no idle containers. Docs: [Set parallelism dynamically](https://circleci.com/docs/guides/test/set-parallelism-dynamically/). The feature is experimental; the stanza syntax will change.
 
