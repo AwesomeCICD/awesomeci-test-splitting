@@ -98,8 +98,8 @@ commands:
 
 jobs:
   # Deliberately unoptimized: always the full suite, 15-wide, split by name
-  # (not timings), Jest --runInBand, and a per-test delay. Unbalanced shards
-  # are the point — later-alphabet domains (users, warehouse) are heavier.
+  # (not timings). Unbalanced shards are the point — later-alphabet
+  # domains (users, warehouse) are heavier.
   classic-tests:
     parameters:
       os:
@@ -127,7 +127,7 @@ jobs:
             echo "This node (index ${CIRCLE_NODE_INDEX}) will run:"
             printf '%s\n' "${SPLIT_FILES}"
             JEST_JUNIT_OUTPUT_FILE="test-reports/junit.xml" \
-              demo/jest.sh --ci --runInBand --runTestsByPath ${SPLIT_FILES}
+              demo/jest.sh --ci --maxWorkers=2 --runTestsByPath ${SPLIT_FILES}
       - store_test_results:
           path: test-reports
       - store_artifacts:
@@ -151,16 +151,17 @@ jobs:
           name: List selected test atoms
           command: circleci testsuite list-tests "demo tests" --key=<< parameters.key >>
 
-  # Optimized to win: TIA + dynamic split + dynamic parallelism, Jest
-  # workers, short per-test delay. `parallelism` is only the fallback (and
-  # full-suite ceiling); the real node count comes from the
-  # experimental.dynamic-parallelism stanza below. Feature-branch wow is one
-  # module on one node vs classic's 15-wide full suite.
+  # Same Jest flags and per-test delay as classic-tests, so the only
+  # differences are TIA, dynamic split and dynamic parallelism.
+  # `parallelism` is only the fallback (and full-suite ceiling); the real
+  # node count comes from the experimental.dynamic-parallelism stanza
+  # below. Feature-branch wow is one module on one node vs classic's
+  # 15-wide full suite.
   smarter-tests:
     executor: linux-node
     parallelism: 15
     environment:
-      DEMO_TEST_DELAY_MS: "15"
+      DEMO_TEST_DELAY_MS: "300"
     steps:
       - run-smarter-tests
 
@@ -170,7 +171,7 @@ jobs:
     executor: macos-node
     parallelism: 2
     environment:
-      DEMO_TEST_DELAY_MS: "15"
+      DEMO_TEST_DELAY_MS: "300"
     steps:
       - run-smarter-tests
 
