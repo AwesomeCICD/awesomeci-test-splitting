@@ -216,10 +216,21 @@ circleci job resource-usage get 0dc4d8df-8f7e-41b0-a3ef-88066a5465c1
 
 `--chart separate` splits parallel executions. `--json` is available if you want numbers instead of the chart.
 
+Optional (30 seconds): which tests flake, and how often. Needs a CircleCI CLI from 2026-11-17 or later (`brew upgrade circleci`).
+
+```bash
+circleci testresult flaky --limit 5
+```
+
+One row per test, most-flaked first: how many times it flaked, when it last flaked, and the job of the latest flake. `--sort` changes the order, and `--json` adds job, workflow and run IDs. The same lookup is a read-only tool in `circleci mcp`.
+
+**Check it before the call.** This demo's tests aren't flaky by design (`max-auto-rerun: 1` only reruns a failed atom), so the list may be empty. If it is, skip the command and just mention it: "if a test flakes, `circleci testresult flaky` names it, so you fix it instead of rerunning the suite."
+
 **Audience should notice**
 
 - `list-tests` is the same selector CI uses, against CircleCI impact data.
 - `resource-usage get` charts CPU and memory against the resource class limit. Classic’s 15 nodes stay busy; a TIA branch uses 1 node.
+- `testresult flaky` turns "flaky failures forcing full reruns" into a list of tests to fix.
 - `list-tests --key=...` is the same command CI runs upstream to size `smarter-tests`. Locally you can omit `--key`.
 
 ### `--local` (mention only)
